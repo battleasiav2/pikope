@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+dist/
+*.log
+public/uploads/avatars/*
+!public/uploads/avatars/.gitkeep

@@ -1,0 +1,3 @@
+# If this folder is ever exposed under the web root, block everything.
+# Subdomain document root should be public/ only.
+Require all denied
