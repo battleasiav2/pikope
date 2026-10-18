@@ -1,3 +1,4 @@
-# If this folder is ever exposed under the web root, block everything.
-# Subdomain document root should be public/ only.
-Require all denied
+# Subdomain document root MUST be public/ (not this folder).
+# Do not put "Require all denied" here — Apache merges parent .htaccess and
+# would 403 every URL under public/ on shared hosting.
+Options -Indexes

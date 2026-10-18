@@ -52,7 +52,7 @@ final class Admin
                     self::createNotice();
                 case '/admin/notice/off':
                     Db::run('UPDATE notices SET active = 0 WHERE id = ?', [(int) ($_POST['id'] ?? 0)]);
-                    self::back('/admin/notices');
+                    self::back('/admin/notices', 'Notice deactivated.');
                 case '/admin/coin-shop/global':
                     self::saveCoinShopGlobal();
                 case '/admin/coin-shop/pack':
@@ -116,10 +116,35 @@ final class Admin
         }
     }
 
-    private static function back(string $to = '/admin'): never
+    private static function back(string $to = '/admin', ?string $ok = null, ?string $err = null): never
     {
+        if ($ok !== null || $err !== null) {
+            $sep = str_contains($to, '?') ? '&' : '?';
+            if ($err !== null) {
+                $to .= $sep . 'flash=err&msg=' . rawurlencode($err);
+            } else {
+                $to .= $sep . 'flash=ok&msg=' . rawurlencode($ok ?? 'Saved successfully.');
+            }
+        }
         header('Location: ' . self::base() . $to);
         exit;
+    }
+
+    private static function renderFlash(): void
+    {
+        $kind = (string) ($_GET['flash'] ?? '');
+        $msg = trim((string) ($_GET['msg'] ?? ''));
+        if ($msg === '' || !in_array($kind, ['ok', 'err'], true)) {
+            return;
+        }
+        if (mb_strlen($msg) > 500) {
+            $msg = mb_substr($msg, 0, 500) . '…';
+        }
+        $class = $kind === 'ok' ? 'ok' : 'bad';
+        echo '<div class="alert ', $class, '" role="status">', self::e($msg), '</div>',
+            '<script>(function(){try{var u=new URL(location.href);if(!u.searchParams.has("flash"))return;',
+            'u.searchParams.delete("flash");u.searchParams.delete("msg");',
+            'history.replaceState({}, "", u.pathname+(u.search?u.search:"")+u.hash);}catch(e){}})();</script>';
     }
 
     /** Only in-app admin paths, so a form cannot redirect the browser elsewhere. */
@@ -140,7 +165,7 @@ final class Admin
         if ($banned) {
             Db::run('DELETE FROM auth_tokens WHERE user_id = ?', [$id]);
         }
-        self::back(self::next('/admin/player?id=' . $id));
+        self::back(self::next('/admin/player?id=' . $id), 'Player ban status updated.');
     }
 
     private static function saveEconomy(): never
@@ -150,7 +175,7 @@ final class Admin
         } catch (ApiError $e) {
             self::fail($e->getMessage(), '/admin/economy');
         }
-        self::back('/admin/economy');
+        self::back('/admin/economy', 'Economy settings saved.');
     }
 
     /** @return array<string,mixed> */
@@ -217,7 +242,7 @@ final class Admin
         } catch (ApiError $e) {
             self::fail($e->getMessage(), '/admin/referrals');
         }
-        self::back('/admin/referrals');
+        self::back('/admin/referrals', 'Referral settings saved.');
     }
 
     /** Optional comma-separated IPs in ADMIN_IP_ALLOWLIST (.env). */
@@ -273,7 +298,7 @@ final class Admin
         } catch (ApiError $e) {
             self::fail($e->getMessage(), $back);
         }
-        self::back($back);
+        self::back($back, 'Wallet balance updated.');
     }
 
     private static function savePlayer(): never
@@ -333,14 +358,14 @@ final class Admin
                 Db::run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $id]);
             }
         });
-        self::back($back);
+        self::back($back, 'Player profile saved.');
     }
 
     private static function signOut(): never
     {
         $id = (int) ($_POST['id'] ?? 0);
         Db::run('DELETE FROM auth_tokens WHERE user_id = ?', [$id]);
-        self::back('/admin/player?id=' . $id);
+        self::back('/admin/player?id=' . $id, 'Player signed out on all devices.');
     }
 
     private static function createNotice(): never
@@ -361,7 +386,7 @@ final class Admin
         if (($_POST['push'] ?? '0') === '1') {
             Push::broadcast($title, $body);
         }
-        self::back('/admin/notices');
+        self::back('/admin/notices', 'Notice published.');
     }
 
     private static function base(): string
@@ -501,6 +526,8 @@ h2{font-size:12px;margin:0 0 14px;font-weight:700;letter-spacing:.1em;text-trans
 .alert{border-radius:var(--radius-sm);padding:16px 18px;margin:0 0 18px;border:1px solid;font-size:14px;line-height:1.5}
 .alert.bad{background:var(--bad-bg);border-color:#fecaca;color:var(--bad)}
 .alert.ok{background:var(--ok-bg);border-color:#bbf7d0;color:var(--ok)}
+.alert.ok::before{content:"Success: ";font-weight:700}
+.alert.bad::before{content:"Error: ";font-weight:700}
 .search-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin:0 0 20px;box-shadow:var(--shadow)}
 .breadcrumb{margin:-8px 0 24px}
 label.check{flex-direction:row;align-items:center;gap:12px;font-size:15px;font-weight:500;color:var(--text);padding:8px 0}
@@ -636,6 +663,7 @@ CSS;
         }
         echo '<p class="side-note"><strong>Security:</strong> Use HTTPS, a strong ADMIN_PASS, and optional ADMIN_IP_ALLOWLIST in .env.</p>',
             '</aside></details><main><header class="page-head"><h1>', self::e($title), '</h1>';
+        self::renderFlash();
     }
 
     /** Big tap-friendly shortcuts (dashboard). */
@@ -700,11 +728,7 @@ CSS;
 
     private static function fail(string $message, string $to): never
     {
-        self::begin('Could not save', 'dashboard');
-        self::endPageHead();
-        echo '<div class="alert bad">', self::e($message), '</div>',
-            '<p class="link-row"><a class="btn ghost" href="', self::e(self::base() . $to), '">← Go back</a></p>';
-        self::end();
+        self::back($to, err: $message);
     }
 
     private static function gameLabel(string $key): string
@@ -1284,7 +1308,7 @@ CSS;
         } catch (ApiError $e) {
             self::fail($e->getMessage(), '/admin/coin-shop');
         }
-        self::back('/admin/coin-shop');
+        self::back('/admin/coin-shop', 'Coin shop discount saved.');
     }
 
     private static function saveCoinShopPack(): never
@@ -1317,7 +1341,7 @@ CSS;
         } catch (ApiError $e) {
             self::fail($e->getMessage(), '/admin/coin-shop');
         }
-        self::back('/admin/coin-shop');
+        self::back('/admin/coin-shop', 'Coin pack saved.');
     }
 
     private static function deleteCoinShopPack(): never
@@ -1330,7 +1354,7 @@ CSS;
         } catch (ApiError $e) {
             self::fail($e->getMessage(), '/admin/coin-shop');
         }
-        self::back('/admin/coin-shop');
+        self::back('/admin/coin-shop', 'Coin pack removed.');
     }
 
     private static function saveOtpSms(): never
@@ -1351,7 +1375,7 @@ CSS;
             self::fail('Set the SMS gateway URL or choose Log only.', '/admin/otp-sms');
         }
         OtpSms::save($raw);
-        self::back('/admin/otp-sms');
+        self::back('/admin/otp-sms', 'SMS OTP settings saved.');
     }
 
     private static function otpSmsPage(string $csrf): never
@@ -1392,7 +1416,7 @@ CSS;
             'maxPendingPerUser' => (int) ($_POST['maxPendingPerUser'] ?? 2),
             'coinPerBdt' => (int) ($_POST['coinPerBdt'] ?? 1),
         ]);
-        self::back('/admin/redeems');
+        self::back('/admin/redeems', 'Redeem settings saved.');
     }
 
     private static function reviewRedeem(bool $approve): never
@@ -1412,7 +1436,7 @@ CSS;
         } catch (ApiError $e) {
             self::fail($e->getMessage(), $back);
         }
-        self::back($back);
+        self::back($back, $approve ? 'Redeem request approved.' : 'Redeem request rejected.');
     }
 
     private static function redeemsPage(string $csrf): never
@@ -1500,7 +1524,7 @@ CSS;
             'rocketNumber' => trim((string) ($_POST['rocketNumber'] ?? '')),
             'paymentType' => (string) ($_POST['paymentType'] ?? 'personal'),
         ]);
-        self::back('/admin/deposits');
+        self::back('/admin/deposits', 'Coin add settings saved.');
     }
 
     private static function reviewDeposit(bool $approve): never
@@ -1520,7 +1544,7 @@ CSS;
         } catch (ApiError $e) {
             self::fail($e->getMessage(), $back);
         }
-        self::back($back);
+        self::back($back, $approve ? 'Deposit approved and coins credited.' : 'Deposit rejected.');
     }
 
     private static function depositsPage(string $csrf): never
@@ -1715,7 +1739,7 @@ CSS;
             'channelId' => trim((string) ($_POST['channelId'] ?? '')),
             'channelName' => trim((string) ($_POST['channelName'] ?? '')),
         ]);
-        self::back('/admin/push');
+        self::back('/admin/push', 'Push notification settings saved.');
     }
 
     private static function pushBroadcast(): never
@@ -1726,12 +1750,10 @@ CSS;
             self::fail('Title and body are required.', '/admin/push');
         }
         $r = Push::broadcast($title, $body);
-        self::begin('Push sent', 'push');
-        self::endPageHead();
-        echo '<div class="alert ok">Inbox: ', self::e($r['inbox']), ' players. FCM sent: ', self::e($r['sent']),
-            ', failed: ', self::e($r['failed']), '.</div>',
-            '<p class="link-row"><a class="btn ghost" href="', self::e(self::base()), '/admin/push">← Push settings</a></p>';
-        self::end();
+        self::back(
+            '/admin/push',
+            'Broadcast sent. Inbox: ' . $r['inbox'] . ' players. FCM ok: ' . $r['sent'] . ', failed: ' . $r['failed'] . '.'
+        );
     }
 
     private static function pushTest(): never
@@ -1743,12 +1765,10 @@ CSS;
             self::fail('Enter a valid player ID.', '/admin/push');
         }
         $r = Push::sendTest($uid, $title, $body);
-        self::begin('Test push', 'push');
-        self::endPageHead();
-        echo '<div class="alert ok">Sent to player ', self::e($uid), ': FCM ok ', self::e($r['sent']),
-            ', failed ', self::e($r['failed']), '. Inbox row created.</div>',
-            '<p class="link-row"><a class="btn ghost" href="', self::e(self::base()), '/admin/push">← Push settings</a></p>';
-        self::end();
+        self::back(
+            '/admin/push',
+            'Test push to player #' . $uid . ': FCM ok ' . $r['sent'] . ', failed ' . $r['failed'] . '. Inbox updated.'
+        );
     }
 
     private static function pushPage(string $csrf): never
@@ -1800,7 +1820,7 @@ CSS;
             'winEndsAt' => trim((string) ($_POST['winEndsAt'] ?? '')),
             'title' => trim((string) ($_POST['title'] ?? '')),
         ]);
-        self::back('/admin/promotions');
+        self::back('/admin/promotions', 'Promotion settings saved.');
     }
 
     private static function promotionsPage(string $csrf): never
