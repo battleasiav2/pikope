@@ -57,6 +57,31 @@ final class Http
         return trim($v);
     }
 
+    /** HTTP Basic credentials (Hostinger/CGI often omit PHP_AUTH_*). */
+    public static function basicAuth(): array
+    {
+        $user = (string) ($_SERVER['PHP_AUTH_USER'] ?? '');
+        $pass = (string) ($_SERVER['PHP_AUTH_PW'] ?? '');
+        if ($user !== '' || $pass !== '') {
+            return [$user, $pass];
+        }
+        $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        if ($header === '' && function_exists('getallheaders')) {
+            foreach (getallheaders() as $name => $value) {
+                if (strcasecmp((string) $name, 'Authorization') === 0) {
+                    $header = (string) $value;
+                }
+            }
+        }
+        if (preg_match('/^Basic\s+(\S+)$/i', $header, $m)) {
+            $decoded = base64_decode($m[1], true);
+            if ($decoded !== false && str_contains($decoded, ':')) {
+                return explode(':', $decoded, 2);
+            }
+        }
+        return ['', ''];
+    }
+
     public static function bearer(): ?string
     {
         $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';

@@ -24,8 +24,7 @@ final class Admin
         }
         self::assertAdminIpAllowed();
         RateLimit::hit('admin:' . RateLimit::ip(), 120, 300);
-        $givenUser = $_SERVER['PHP_AUTH_USER'] ?? '';
-        $givenPass = $_SERVER['PHP_AUTH_PW'] ?? '';
+        [$givenUser, $givenPass] = Http::basicAuth();
         if (!hash_equals($user, $givenUser) || !hash_equals($pass, $givenPass)) {
             RateLimit::hit('admin-fail:' . RateLimit::ip(), 15, 900);
             header('WWW-Authenticate: Basic realm="PikoPe master admin"');
