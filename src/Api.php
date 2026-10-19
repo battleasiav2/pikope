@@ -45,7 +45,11 @@ final class Api
         return match (true) {
             $method === 'GET' && $path === '/health' => ['ok' => true, 'time' => GameService::nowMs()],
             // Where the app finds the WebSocket server; null means it polls instead.
-            $method === 'GET' && $path === '/config' => ['ws' => Config::get('WS_PUBLIC_URL') ?: null],
+            $method === 'GET' && $path === '/config' => [
+                'ws' => Config::get('WS_PUBLIC_URL') ?: null,
+                'facebook' => SupportLinks::config()['facebook'],
+                'telegram' => SupportLinks::config()['telegram'],
+            ],
 
             $method === 'POST' && $path === '/auth/guest' => self::guest(),
             $method === 'POST' && $path === '/auth/register' => self::register(),

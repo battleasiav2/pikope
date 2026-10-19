@@ -81,6 +81,8 @@ final class Admin
                     self::pushBroadcast();
                 case '/admin/push/test':
                     self::pushTest();
+                case '/admin/support':
+                    self::saveSupport();
             }
             throw ApiError::notFound('No such endpoint');
         }
@@ -104,6 +106,7 @@ final class Admin
             '/admin/notices' => self::noticesPage($csrf),
             '/admin/promotions' => self::promotionsPage($csrf),
             '/admin/push' => self::pushPage($csrf),
+            '/admin/support' => self::supportPage($csrf),
             default => throw ApiError::notFound('No such endpoint'),
         };
     }
@@ -645,6 +648,7 @@ CSS;
                 'push' => ['Push (APK)', '/admin/push'],
                 'otp-sms' => ['SMS OTP', '/admin/otp-sms'],
                 'notices' => ['Notices', '/admin/notices'],
+                'support' => ['Support links', '/admin/support'],
             ],
         ];
         echo '<div class="shell"><details class="nav-wrap" open><summary>Menu — PikoPe Admin</summary>',
@@ -685,6 +689,7 @@ CSS;
             ['Economy', '/admin/economy', 'Stakes, fees, bonus', 0],
             ['Push message', '/admin/push', 'APK notifications', 0],
             ['Notices', '/admin/notices', 'In-app news / banner', 0],
+            ['Support links', '/admin/support', 'Facebook and Telegram', 0],
             ['Coin shop', '/admin/coin-shop', 'Packs and discount', 0],
             ['SMS OTP', '/admin/otp-sms', 'Forgot password SMS', 0],
         ];
@@ -1898,6 +1903,33 @@ CSS;
             echo '<tr><td colspan="7" class="muted">No notices yet.</td></tr>';
         }
         echo '</table>', self::tableScrollClose(), '</section>';
+        self::end();
+    }
+
+    private static function saveSupport(): never
+    {
+        try {
+            SupportLinks::save([
+                'facebook' => trim((string) ($_POST['facebook'] ?? '')),
+                'telegram' => trim((string) ($_POST['telegram'] ?? '')),
+            ]);
+        } catch (ApiError $e) {
+            self::back('/admin/support', null, $e->getMessage());
+        }
+        self::back('/admin/support', 'Support links saved.');
+    }
+
+    private static function supportPage(string $csrf): never
+    {
+        $base = self::base();
+        $c = SupportLinks::config();
+        self::begin('Support links', 'support');
+        self::pageLead('These two buttons appear in the app Settings. Leave a box empty to hide that button. Paste a full link, such as https://facebook.com/yourpage or https://t.me/yourchannel.');
+        echo '<section class="section"><div class="card"><form method="post" action="', self::e($base), '/admin/support">', self::csrfField($csrf),
+            '<div class="grid">',
+            '<label class="span2">Facebook link<input name="facebook" maxlength="300" value="', self::e($c['facebook']), '" placeholder="https://facebook.com/yourpage"></label>',
+            '<label class="span2">Telegram link<input name="telegram" maxlength="300" value="', self::e($c['telegram']), '" placeholder="https://t.me/yourchannel"></label>',
+            '</div><button>Save support links</button></form></div></section>';
         self::end();
     }
 }
