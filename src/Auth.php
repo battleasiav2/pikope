@@ -18,6 +18,7 @@ final class Auth
     /** @return array<string,mixed> the user this bearer token belongs to */
     public static function userByToken(string $token): array
     {
+        Economy::ensureBoardColumns();
         $row = Db::one(
             'SELECT u.*, t.id AS token_id FROM auth_tokens t JOIN users u ON u.id = t.user_id
              WHERE t.token_hash = ? AND t.expires_at > NOW()',
@@ -73,11 +74,24 @@ final class Auth
     /** @param array<string,mixed> $u @return array<string,mixed> */
     public static function publicUser(array $u): array
     {
+        Economy::ensureBoardColumns();
+        if (!array_key_exists('carrom_board', $u)) {
+            $fresh = Db::one('SELECT carrom_board, ludo_board FROM users WHERE id = ?', [(int) $u['id']]);
+            if ($fresh !== null) {
+                $u['carrom_board'] = $fresh['carrom_board'];
+                $u['ludo_board'] = $fresh['ludo_board'];
+            }
+        }
         return [
             'id' => (int) $u['id'],
             'displayName' => $u['display_name'],
             'avatar' => $u['avatar'],
             'tableSkin' => $u['table_skin'],
+            'carromBoard' => $u['carrom_board'] ?? 'classic',
+            'ludoBoard' => $u['ludo_board'] ?? 'classic',
+            'ownedPoolTables' => Economy::ownedBoards((int) $u['id'], 'pool'),
+            'ownedCarromBoards' => Economy::ownedBoards((int) $u['id'], 'carrom'),
+            'ownedLudoBoards' => Economy::ownedBoards((int) $u['id'], 'ludo'),
             'coins' => (int) $u['coins'],
             'gems' => (int) $u['gems'],
             'xp' => (int) $u['xp'],

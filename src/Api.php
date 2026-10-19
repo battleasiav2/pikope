@@ -76,6 +76,7 @@ final class Api
             $method === 'POST' && $path === '/shop/coins/buy' => self::throttled('coin_shop', 30, 3600, self::buyCoinPack(...)),
             $method === 'POST' && $path === '/cues/buy' => self::cue(true),
             $method === 'POST' && $path === '/me/cue' => self::cue(false),
+            $method === 'POST' && $path === '/boards/select' => self::selectBoard(),
             $method === 'GET' && $path === '/me/history' => self::history(),
             $method === 'GET' && $path === '/me/activity' => self::activity(),
             $method === 'GET' && $path === '/me/redeems' => self::redeems(),
@@ -288,7 +289,7 @@ final class Api
         $name = Http::str('displayName', 40, false);
         $avatar = self::cleanAvatar(Http::str('avatar', 255, false));
         $skin = Http::str('tableSkin', 32, false);
-        if ($skin !== '' && preg_match('/^[a-z0-9_]+$/', $skin) !== 1) {
+        if ($skin !== '' && !Economy::poolBoardAllowed((int) $user['id'], $skin)) {
             throw ApiError::badRequest('Unknown table', 'bad_skin');
         }
         if ($name !== '' && preg_match('/^[A-Za-z0-9_]{3,16}$/', $name) !== 1) {
@@ -412,6 +413,14 @@ final class Api
         $user = Auth::user();
         $id = Http::str('id', 32);
         $buy ? Economy::buyCue($user, $id) : Economy::equipCue($user, $id);
+        return ['user' => self::fresh((int) $user['id'])];
+    }
+
+    /** Buy a board if needed, then keep that one selected. */
+    private static function selectBoard(): array
+    {
+        $user = Auth::user();
+        Economy::selectBoard($user, Http::str('kind', 16), Http::str('id', 32));
         return ['user' => self::fresh((int) $user['id'])];
     }
 

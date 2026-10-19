@@ -377,6 +377,93 @@ final class Economy
         Db::run('UPDATE users SET cue = ? WHERE id = ?', [$id, $user['id']]);
     }
 
+    // -------------------------------------------------------------- boards
+
+    /**
+     * Cloth prices in Pico coin. 0 is free and always owned.
+     * Keep these in step with the app shop (board_shop.dart, ludo_board.dart).
+     *
+     * @var array<string, array<string, int>>
+     */
+    public const BOARDS = [
+        'pool' => [
+            'pro_teal' => 0, 'pro_green' => 0, 'pro_blue' => 0,
+            'pro_red' => 2000, 'pro_black' => 4000,
+            'table2' => 6000, 'table1' => 8000, 'table3' => 10000,
+            'table4' => 12000, 'table5' => 14000, 'table6' => 16000, 'table8' => 18000,
+        ],
+        'carrom' => [
+            'classic' => 0, 'walnut' => 0,
+            'royal' => 4000, 'emerald' => 6000, 'cherry' => 8000, 'midnight' => 12000,
+        ],
+        'ludo' => [
+            'classic' => 0, 'royal' => 5000, 'sunset' => 8000, 'midnight' => 12000, 'candy' => 15000,
+        ],
+    ];
+
+    public static function ensureBoardColumns(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+        foreach (['carrom_board' => 'classic', 'ludo_board' => 'classic'] as $col => $def) {
+            $have = Db::pdo()->query("SHOW COLUMNS FROM users LIKE " . Db::pdo()->quote($col))->fetch();
+            if ($have === false) {
+                Db::pdo()->exec("ALTER TABLE users ADD COLUMN $col VARCHAR(32) NOT NULL DEFAULT '$def'");
+            }
+        }
+    }
+
+    /** @return list<string> */
+    public static function ownedBoards(int $uid, string $kind): array
+    {
+        $catalog = self::BOARDS[$kind] ?? [];
+        $free = [];
+        foreach ($catalog as $id => $price) {
+            if ($price === 0) {
+                $free[] = $id;
+            }
+        }
+        $rows = Db::all('SELECT item FROM user_items WHERE user_id = ? AND kind = ?', [$uid, $kind]);
+        return array_values(array_unique(array_merge($free, array_column($rows, 'item'))));
+    }
+
+    /** A pool cloth the profile editor may save: known, and already paid for. */
+    public static function poolBoardAllowed(int $uid, string $id): bool
+    {
+        $price = self::BOARDS['pool'][$id] ?? null;
+        if ($price === null) {
+            return false;
+        }
+        return $price === 0 || in_array($id, self::ownedBoards($uid, 'pool'), true);
+    }
+
+    /** Buy [id] of [kind] when it is not owned yet, then leave it selected. */
+    public static function selectBoard(array $user, string $kind, string $id): void
+    {
+        self::ensureBoardColumns();
+        $price = self::BOARDS[$kind][$id] ?? throw ApiError::notFound('No such board');
+        $column = match ($kind) {
+            'pool' => 'table_skin',
+            'carrom' => 'carrom_board',
+            'ludo' => 'ludo_board',
+            default => throw ApiError::notFound('No such board'),
+        };
+        Db::transaction(static function () use ($user, $kind, $id, $price, $column): void {
+            $uid = (int) $user['id'];
+            Db::one('SELECT id FROM users WHERE id = ? FOR UPDATE', [$uid]);
+            if (!in_array($id, self::ownedBoards($uid, $kind), true)) {
+                if ($price > 0) {
+                    self::move($uid, -$price, 'board:' . $kind . ':' . $id);
+                }
+                Db::run('INSERT INTO user_items (user_id, kind, item) VALUES (?, ?, ?)', [$uid, $kind, $id]);
+            }
+            Db::run("UPDATE users SET $column = ? WHERE id = ?", [$id, $uid]);
+        });
+    }
+
     // --------------------------------------------------------------- lobby
 
     /** Everything the lobby screens need in one request. @param array<string,mixed> $user */
