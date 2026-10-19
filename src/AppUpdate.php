@@ -11,6 +11,7 @@ final class AppUpdate
         'versionCode' => 0,
         'versionName' => '',
         'apkUrl' => '',
+        'apkSha256' => '',
         'notes' => '',
         'required' => false,
     ];
@@ -43,13 +44,17 @@ final class AppUpdate
                 'required' => false,
             ];
         }
-        return [
+        $out = [
             'versionCode' => (int) $c['versionCode'],
             'versionName' => $c['versionName'],
             'apkUrl' => $c['apkUrl'],
             'notes' => $c['notes'],
             'required' => (bool) $c['required'],
         ];
+        if ($c['apkSha256'] !== '') {
+            $out['apkSha256'] = $c['apkSha256'];
+        }
+        return $out;
     }
 
     /** @param array<string,mixed> $raw */
@@ -77,11 +82,16 @@ final class AppUpdate
         if (strlen($notes) > 400) {
             $notes = substr($notes, 0, 400);
         }
+        $sha = strtolower(preg_replace('/\s+/', '', trim((string) ($raw['apkSha256'] ?? ''))) ?? '');
+        if ($sha !== '' && preg_match('/^[a-f0-9]{64}$/', $sha) !== 1) {
+            throw ApiError::badRequest('APK SHA-256 must be 64 hex characters or left empty', 'bad_hash');
+        }
         return [
             'enabled' => filter_var($raw['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'versionCode' => max(0, (int) ($raw['versionCode'] ?? 0)),
             'versionName' => $name,
             'apkUrl' => self::url($raw['apkUrl'] ?? ''),
+            'apkSha256' => $sha,
             'notes' => $notes,
             'required' => filter_var($raw['required'] ?? false, FILTER_VALIDATE_BOOLEAN),
         ];
@@ -99,6 +109,10 @@ final class AppUpdate
         $host = strtolower((string) (parse_url($url, PHP_URL_HOST) ?: ''));
         if ($host === '') {
             throw ApiError::badRequest('The APK link must start with https://', 'bad_link');
+        }
+        $appHost = strtolower((string) (parse_url(trim(Config::get('APP_URL')), PHP_URL_HOST) ?: ''));
+        if ($appHost !== '' && $host !== $appHost) {
+            throw ApiError::badRequest('The APK link must use the same host as APP_URL', 'bad_link');
         }
         return $url;
     }

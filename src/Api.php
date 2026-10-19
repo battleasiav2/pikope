@@ -13,10 +13,12 @@ final class Api
 
     public static function handle(): never
     {
-        $origin = Config::get('CORS_ORIGIN', '*');
-        header("Access-Control-Allow-Origin: $origin");
-        header('Access-Control-Allow-Headers: Authorization, Content-Type');
-        header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
+        $origin = trim(Config::get('CORS_ORIGIN', ''));
+        if ($origin !== '') {
+            header("Access-Control-Allow-Origin: $origin");
+            header('Access-Control-Allow-Headers: Authorization, Content-Type');
+            header('Access-Control-Allow-Methods: GET, POST, PATCH, OPTIONS');
+        }
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: no-referrer');
         if (Http::method() === 'OPTIONS') {
@@ -148,14 +150,12 @@ final class Api
     private static function guest(): array
     {
         // Mobile networks put many players behind one address.
-        RateLimit::hit('guest:' . RateLimit::ip(), 120, 3600);
+        RateLimit::hit('guest:' . RateLimit::ip(), 40, 3600);
         $name = Auth::randomDisplayName();
         $avatar = self::cleanAvatar(Http::str('avatar', 255, false)) ?? 'asset:avatar_1';
-        Auth::assertReferralAvailable(Http::str('referralCode', 8, false));
         Db::run('INSERT INTO users (display_name, avatar, is_guest, name_set, coins) VALUES (?, ?, 1, 1, 0)', [$name, $avatar]);
         $id = Db::lastId();
         Economy::move($id, (int) Economy::config()['startCoins'], 'welcome');
-        Auth::attachReferral($id, Http::str('referralCode', 8, false));
         return self::session($id);
     }
 
@@ -369,21 +369,25 @@ final class Api
     private static function applyReferral(): array
     {
         $user = Auth::user();
-        Auth::attachReferral((int) $user['id'], Http::str('code', 12));
-        return ['user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [(int) $user['id']]))];
+        $uid = (int) $user['id'];
+        RateLimit::hit('referral-apply:' . $uid, 10, 3600);
+        RateLimit::hit('referral-apply-ip:' . RateLimit::ip(), 40, 3600);
+        Auth::attachReferral($uid, Http::str('code', 12));
+        return ['user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$uid]))];
     }
 
     // -------------------------------------------------------- leaderboard
 
     private static function leaderboard(): array
     {
+        Auth::user();
         $rows = Db::all(
-            'SELECT id, display_name, avatar, wins, games, coins, xp FROM users
-             WHERE games > 0 AND is_bot = 0 ORDER BY wins DESC, coins DESC, id ASC LIMIT 50'
+            'SELECT id, display_name, avatar, wins, games, xp FROM users
+             WHERE games > 0 AND is_bot = 0 ORDER BY wins DESC, games DESC, id ASC LIMIT 50'
         );
         return ['entries' => array_map(static fn ($r) => [
             'id' => (int) $r['id'], 'name' => $r['display_name'], 'avatar' => $r['avatar'],
-            'wins' => (int) $r['wins'], 'games' => (int) $r['games'], 'coins' => (int) $r['coins'],
+            'wins' => (int) $r['wins'], 'games' => (int) $r['games'],
             'level' => Economy::levelOf((int) $r['xp'])['level'], 'rank' => Economy::rankOf((int) $r['wins'])['name'],
         ], $rows)];
     }

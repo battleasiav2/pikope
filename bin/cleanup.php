@@ -35,6 +35,18 @@ $report['idle guests'] = Db::run(
      AND NOT EXISTS (SELECT 1 FROM auth_tokens t WHERE t.user_id = u.id AND t.last_used_at > DATE_SUB(NOW(), INTERVAL 30 DAY))
      AND NOT EXISTS (SELECT 1 FROM game_players g WHERE g.user_id = u.id)"
 )->rowCount();
+$report['wallet drift'] = (int) Db::one(
+    "SELECT COUNT(*) AS n FROM users u
+     WHERE (
+       EXISTS (SELECT 1 FROM wallet_tx t WHERE t.user_id = u.id AND t.currency = 'coins')
+       AND u.coins <> (SELECT t.balance_after FROM wallet_tx t
+                       WHERE t.user_id = u.id AND t.currency = 'coins' ORDER BY t.id DESC LIMIT 1)
+     ) OR (
+       EXISTS (SELECT 1 FROM wallet_tx t WHERE t.user_id = u.id AND t.currency = 'gems')
+       AND u.gems <> (SELECT t.balance_after FROM wallet_tx t
+                      WHERE t.user_id = u.id AND t.currency = 'gems' ORDER BY t.id DESC LIMIT 1)
+     )"
+)['n'];
 
 foreach ($report as $what => $count) {
     echo str_pad($what, 16), $count, "\n";

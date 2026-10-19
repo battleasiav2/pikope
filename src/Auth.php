@@ -196,9 +196,12 @@ final class Auth
             throw ApiError::badRequest('Invite code must be 6 digits', 'bad_code');
         }
         Db::transaction(static function () use ($userId, $code, $quietIfSet): void {
-            $me = Db::one('SELECT id, referred_by FROM users WHERE id = ? FOR UPDATE', [$userId]);
+            $me = Db::one('SELECT id, referred_by, is_guest FROM users WHERE id = ? FOR UPDATE', [$userId]);
             if ($me === null) {
                 throw ApiError::notFound('No such player');
+            }
+            if ((int) $me['is_guest'] === 1) {
+                throw ApiError::conflict('Add a login before using an invite code', 'guest_referral');
             }
             if ($me['referred_by'] !== null) {
                 if ($quietIfSet) {

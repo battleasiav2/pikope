@@ -81,16 +81,17 @@ final class Redeem
         if ($bdt < 1) {
             throw ApiError::badRequest('Amount too small.', 'bad_amount');
         }
-        $pending = (int) Db::one(
-            "SELECT COUNT(*) AS n FROM redeem_requests WHERE user_id = ? AND status = 'pending'",
-            [$userId]
-        )['n'];
-        if ($pending >= (int) $c['maxPendingPerUser']) {
-            throw ApiError::conflict('You already have pending redeem requests. Wait for admin review.', 'redeem_pending');
-        }
+        $maxPending = (int) $c['maxPendingPerUser'];
 
-        $out = [];
-        Db::transaction(static function () use ($userId, $coins, $bdt, $provider, $wallet, &$out): void {
+        return Db::transaction(static function () use ($userId, $coins, $bdt, $provider, $wallet, $maxPending): array {
+            Db::one('SELECT id FROM users WHERE id = ? FOR UPDATE', [$userId]);
+            $pending = (int) Db::one(
+                "SELECT COUNT(*) AS n FROM redeem_requests WHERE user_id = ? AND status = 'pending'",
+                [$userId]
+            )['n'];
+            if ($pending >= $maxPending) {
+                throw ApiError::conflict('You already have pending redeem requests. Wait for admin review.', 'redeem_pending');
+            }
             Db::run(
                 'INSERT INTO redeem_requests (user_id, coins, bdt_amount, wallet_provider, wallet_number, status)
                  VALUES (?, ?, ?, ?, ?, \'pending\')',
@@ -100,8 +101,11 @@ final class Redeem
             Economy::move($userId, -$coins, 'redeem:' . $id);
             $row = Db::one('SELECT * FROM redeem_requests WHERE id = ?', [$id]);
             $out = self::publicRow($row);
+            return [
+                'request' => $out,
+                'user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$userId])),
+            ];
         });
-        return ['request' => $out, 'user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$userId]))];
     }
 
     public static function approve(int $id, string $note = ''): void

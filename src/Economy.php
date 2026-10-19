@@ -161,8 +161,8 @@ final class Economy
         if ($cut <= 0) {
             return;
         }
-        $row = Db::one('SELECT referred_by, is_bot FROM users WHERE id = ?', [$playerId]);
-        if ($row === null || (int) $row['is_bot'] === 1) {
+        $row = Db::one('SELECT referred_by, is_bot, is_guest FROM users WHERE id = ?', [$playerId]);
+        if ($row === null || (int) $row['is_bot'] === 1 || (int) $row['is_guest'] === 1) {
             return;
         }
         $referrerId = (int) ($row['referred_by'] ?? 0);

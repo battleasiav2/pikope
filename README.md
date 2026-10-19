@@ -21,6 +21,8 @@ See `deploy/HOSTINGER-PIKOPE.txt` for the full checklist.
 
 ## APK
 
+Release builds need `android/key.properties` (see `duelx/android/key.properties.example` in the Flutter repo).
+
 ```bash
 flutter build apk --release --dart-define=API_BASE_URL=https://pikope.bet369win.com
 ```
@@ -32,6 +34,11 @@ flutter build apk --release --dart-define=API_BASE_URL=https://pikope.bet369win.
 - Writable: `public/uploads/avatars`
 
 Check server: `php bin/doctor.php`
+
+Wallet audit (read-only): `php bin/reconcile_wallet.php` — exit 1 if balance ≠ ledger.
+
+Push notifications: set `FCM_SERVER_KEY` in `.env` (Firebase console → Cloud Messaging).
+Replace the placeholder `google-services.json` in the Flutter app with your Firebase Android app file (`com.pikope.piko`).
 
 ## Layout
 

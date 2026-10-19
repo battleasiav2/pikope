@@ -97,31 +97,42 @@ final class CoinDeposit
         // Promo bonus (if any) is fixed here — approve credits exactly this row, never twice.
         $coins = Promotions::depositCoins($bdt, $rate);
 
-        $dup = Db::one(
-            "SELECT id FROM coin_deposit_requests WHERE trx_id = ? AND provider = ? AND status IN ('pending','approved')",
-            [$trxId, $provider]
-        );
-        if ($dup !== null) {
-            throw ApiError::conflict('This TrxID was already used.', 'trx_used');
-        }
-        $pending = (int) Db::one(
-            "SELECT COUNT(*) AS n FROM coin_deposit_requests WHERE user_id = ? AND status = 'pending'",
-            [$userId]
-        )['n'];
-        if ($pending >= (int) $c['maxPendingPerUser']) {
-            throw ApiError::conflict('Wait for your pending deposits to be reviewed.', 'deposit_pending');
-        }
+        $maxPending = (int) $c['maxPendingPerUser'];
 
-        Db::run(
-            'INSERT INTO coin_deposit_requests (user_id, provider, payer_number, trx_id, bdt_amount, coins, status)
-             VALUES (?, ?, ?, ?, ?, ?, \'pending\')',
-            [$userId, $provider, $payer, $trxId, $bdt, $coins]
-        );
-        $row = Db::one('SELECT * FROM coin_deposit_requests WHERE id = ?', [Db::lastId()]);
-        return [
-            'request' => self::publicRow($row),
-            'user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$userId])),
-        ];
+        return Db::transaction(static function () use ($userId, $provider, $payer, $trxId, $bdt, $coins, $maxPending): array {
+            Db::one('SELECT id FROM users WHERE id = ? FOR UPDATE', [$userId]);
+            $dup = Db::one(
+                "SELECT id FROM coin_deposit_requests WHERE trx_id = ? AND provider = ? AND status IN ('pending','approved')",
+                [$trxId, $provider]
+            );
+            if ($dup !== null) {
+                throw ApiError::conflict('This TrxID was already used.', 'trx_used');
+            }
+            $pending = (int) Db::one(
+                "SELECT COUNT(*) AS n FROM coin_deposit_requests WHERE user_id = ? AND status = 'pending'",
+                [$userId]
+            )['n'];
+            if ($pending >= $maxPending) {
+                throw ApiError::conflict('Wait for your pending deposits to be reviewed.', 'deposit_pending');
+            }
+            try {
+                Db::run(
+                    'INSERT INTO coin_deposit_requests (user_id, provider, payer_number, trx_id, bdt_amount, coins, status)
+                     VALUES (?, ?, ?, ?, ?, ?, \'pending\')',
+                    [$userId, $provider, $payer, $trxId, $bdt, $coins]
+                );
+            } catch (\PDOException $e) {
+                if (($e->errorInfo[1] ?? 0) === 1062) {
+                    throw ApiError::conflict('This TrxID was already used.', 'trx_used');
+                }
+                throw $e;
+            }
+            $row = Db::one('SELECT * FROM coin_deposit_requests WHERE id = ?', [Db::lastId()]);
+            return [
+                'request' => self::publicRow($row),
+                'user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$userId])),
+            ];
+        });
     }
 
     public static function approve(int $id, string $note = ''): void

@@ -1946,6 +1946,7 @@ CSS;
                 'versionCode' => (int) ($_POST['versionCode'] ?? 0),
                 'versionName' => trim((string) ($_POST['versionName'] ?? '')),
                 'apkUrl' => trim((string) ($_POST['apkUrl'] ?? '')),
+                'apkSha256' => trim((string) ($_POST['apkSha256'] ?? '')),
                 'notes' => trim((string) ($_POST['notes'] ?? '')),
                 'required' => ($_POST['required'] ?? '0') === '1',
             ]);
@@ -1968,6 +1969,7 @@ CSS;
             '<label>Version code<input type="number" name="versionCode" min="1" max="999999" value="', self::e((int) $c['versionCode']), '" placeholder="3"></label>',
             '<label>Version name<input name="versionName" maxlength="40" value="', self::e($c['versionName']), '" placeholder="1.0.2"></label>',
             '<label class="span2">APK link<input name="apkUrl" maxlength="400" value="', self::e($c['apkUrl']), '" placeholder="https://pikope.bet369win.com/pikope.apk"></label>',
+            '<label class="span2">APK SHA-256 (optional)<input name="apkSha256" maxlength="64" value="', self::e($c['apkSha256'] ?? ''), '" placeholder="64 hex chars; app rejects a mismatch"></label>',
             '<label class="span2">Note for players<textarea name="notes" rows="3" maxlength="400">', self::e($c['notes']), '</textarea></label>',
             '</div><button>Save app update</button></form></div></section>';
         self::end();
