@@ -263,19 +263,107 @@ final class Economy
     /**
      * Moves coins (or gems) and records it. The caller holds the transaction;
      * the user row is locked here. Refuses to go below zero.
+     *
+     * Coins also track redeemable_coins: deposits stay in the main wallet only;
+     * prizes and referrals add redeemable balance; cash-out uses redeemable only;
+     * buy-ins spend non-redeemable coins first.
      */
     public static function move(int $uid, int $amount, string $reason, ?int $roomId = null, string $currency = 'coins'): int
     {
-        $column = $currency === 'gems' ? 'gems' : 'coins';
-        $row = Db::one("SELECT $column AS balance FROM users WHERE id = ? FOR UPDATE", [$uid]);
-        $balance = (int) $row['balance'] + $amount;
-        if ($balance < 0) {
-            throw ApiError::conflict($currency === 'gems' ? 'Not enough gems' : 'Not enough coins', 'not_enough_' . $column);
+        if ($currency === 'gems') {
+            $row = Db::one('SELECT gems AS balance FROM users WHERE id = ? FOR UPDATE', [$uid]);
+            $balance = (int) $row['balance'] + $amount;
+            if ($balance < 0) {
+                throw ApiError::conflict('Not enough gems', 'not_enough_gems');
+            }
+            Db::run('UPDATE users SET gems = ? WHERE id = ?', [$balance, $uid]);
+            Db::run('INSERT INTO wallet_tx (user_id, currency, amount, balance_after, reason, room_id) VALUES (?, ?, ?, ?, ?, ?)',
+                [$uid, 'gems', $amount, $balance, $reason, $roomId]);
+            return $balance;
         }
-        Db::run("UPDATE users SET $column = ? WHERE id = ?", [$balance, $uid]);
+
+        self::ensureRedeemableColumn();
+        $row = Db::one('SELECT coins, redeemable_coins FROM users WHERE id = ? FOR UPDATE', [$uid]);
+        $coins = (int) $row['coins'];
+        $redeemable = (int) $row['redeemable_coins'];
+
+        if ($amount >= 0) {
+            $coins += $amount;
+            if (self::creditsRedeemable($reason)) {
+                $redeemable += $amount;
+            }
+        } else {
+            $debit = -$amount;
+            if ($debit > $coins) {
+                throw ApiError::conflict('Not enough coins', 'not_enough_coins');
+            }
+            if (self::isRedeemWithdrawal($reason)) {
+                if ($debit > $redeemable) {
+                    throw ApiError::conflict('Only win balance can be redeemed. Add more by winning matches.', 'not_enough_redeemable');
+                }
+                $redeemable -= $debit;
+            } else {
+                $nonRedeemable = max(0, $coins - $redeemable);
+                $fromDeposit = min($debit, $nonRedeemable);
+                $fromWin = $debit - $fromDeposit;
+                $redeemable -= $fromWin;
+            }
+            $coins -= $debit;
+        }
+
+        if ($redeemable < 0 || $redeemable > $coins) {
+            throw new ApiError(500, 'server_error', 'Wallet balance mismatch');
+        }
+
+        Db::run('UPDATE users SET coins = ?, redeemable_coins = ? WHERE id = ?', [$coins, $redeemable, $uid]);
         Db::run('INSERT INTO wallet_tx (user_id, currency, amount, balance_after, reason, room_id) VALUES (?, ?, ?, ?, ?, ?)',
-            [$uid, $column, $amount, $balance, $reason, $roomId]);
-        return $balance;
+            [$uid, 'coins', $amount, $coins, $reason, $roomId]);
+        return $coins;
+    }
+
+    /** Winnings (and redeem refunds) increase the cash-out bucket. */
+    private static function creditsRedeemable(string $reason): bool
+    {
+        return $reason === 'prize'
+            || $reason === 'referral'
+            || str_starts_with($reason, 'redeem_refund:');
+    }
+
+    /** Pending/approved redeem holds — must not spend deposited coins. */
+    private static function isRedeemWithdrawal(string $reason): bool
+    {
+        return str_starts_with($reason, 'redeem:') && !str_starts_with($reason, 'redeem_refund:');
+    }
+
+    /** Adds users.redeemable_coins and backfills from wallet history once. */
+    public static function ensureRedeemableColumn(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+        $have = Db::pdo()->query("SHOW COLUMNS FROM users LIKE 'redeemable_coins'")->fetch();
+        if ($have !== false) {
+            return;
+        }
+        Db::pdo()->exec('ALTER TABLE users ADD COLUMN redeemable_coins INT NOT NULL DEFAULT 0 AFTER coins');
+        foreach (Db::all('SELECT id, coins FROM users') as $u) {
+            $uid = (int) $u['id'];
+            $earned = (int) Db::one(
+                "SELECT COALESCE(SUM(amount), 0) AS n FROM wallet_tx
+                 WHERE user_id = ? AND currency = 'coins' AND amount > 0
+                 AND (reason = 'prize' OR reason = 'referral' OR reason LIKE 'redeem_refund:%')",
+                [$uid]
+            )['n'];
+            $redeemOut = (int) Db::one(
+                "SELECT COALESCE(SUM(-amount), 0) AS n FROM wallet_tx
+                 WHERE user_id = ? AND currency = 'coins' AND amount < 0 AND reason LIKE 'redeem:%'",
+                [$uid]
+            )['n'];
+            $redeemable = min((int) $u['coins'], max(0, $earned - $redeemOut));
+            Db::run('UPDATE users SET redeemable_coins = ? WHERE id = ?', [$redeemable, $uid]);
+        }
     }
 
     // ------------------------------------------------------------ levels

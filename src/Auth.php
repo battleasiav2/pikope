@@ -19,6 +19,7 @@ final class Auth
     public static function userByToken(string $token): array
     {
         Economy::ensureBoardColumns();
+        Economy::ensureRedeemableColumn();
         $row = Db::one(
             'SELECT u.*, t.id AS token_id FROM auth_tokens t JOIN users u ON u.id = t.user_id
              WHERE t.token_hash = ? AND t.expires_at > NOW()',
@@ -93,6 +94,7 @@ final class Auth
             'ownedCarromBoards' => Economy::ownedBoards((int) $u['id'], 'carrom'),
             'ownedLudoBoards' => Economy::ownedBoards((int) $u['id'], 'ludo'),
             'coins' => (int) $u['coins'],
+            'redeemableCoins' => (int) ($u['redeemable_coins'] ?? 0),
             'gems' => (int) $u['gems'],
             'xp' => (int) $u['xp'],
             'level' => Economy::levelOf((int) $u['xp'])['level'],

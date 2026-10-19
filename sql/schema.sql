@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar        VARCHAR(255) NOT NULL DEFAULT 'asset:avatar_1',
   table_skin    VARCHAR(32)  NOT NULL DEFAULT 'pro_teal',
   coins         INT          NOT NULL DEFAULT 2000,
+  redeemable_coins INT       NOT NULL DEFAULT 0,
   gems          INT          NOT NULL DEFAULT 0,
   xp            INT          NOT NULL DEFAULT 0,
   cue           VARCHAR(32)  NOT NULL DEFAULT 'classic',

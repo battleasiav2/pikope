@@ -76,6 +76,7 @@ final class Redeem
         if ($coins < $min || $coins > $max) {
             throw ApiError::badRequest("Redeem between $min and $max Pico coin.", 'bad_amount');
         }
+        Economy::ensureRedeemableColumn();
         $rate = max(1, (int) $c['coinPerBdt']);
         $bdt = intdiv($coins, $rate);
         if ($bdt < 1) {
@@ -84,7 +85,13 @@ final class Redeem
         $maxPending = (int) $c['maxPendingPerUser'];
 
         return Db::transaction(static function () use ($userId, $coins, $bdt, $provider, $wallet, $maxPending): array {
-            Db::one('SELECT id FROM users WHERE id = ? FOR UPDATE', [$userId]);
+            $u = Db::one('SELECT id, redeemable_coins FROM users WHERE id = ? FOR UPDATE', [$userId]);
+            if ($u === null) {
+                throw ApiError::notFound('No such player');
+            }
+            if ($coins > (int) $u['redeemable_coins']) {
+                throw ApiError::conflict('Not enough redeemable win balance. Deposits cannot be cashed out.', 'not_enough_redeemable');
+            }
             $pending = (int) Db::one(
                 "SELECT COUNT(*) AS n FROM redeem_requests WHERE user_id = ? AND status = 'pending'",
                 [$userId]
