@@ -502,7 +502,7 @@ nav a.on .nav-dot{background:var(--brand)}
 .nav-badge{margin-left:auto;min-width:24px;text-align:center;background:var(--warn);color:#fff;font-size:11px;font-weight:800;padding:4px 8px;border-radius:999px;line-height:1}
 nav a.on .nav-badge{background:var(--brand)}
 .side-note{margin-top:24px;padding:14px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--line);font-size:12px;line-height:1.5;color:var(--muted)}
-main{flex:1;min-width:0;padding:32px 40px 56px;max-width:1280px;background:#fff}
+main{flex:1;min-width:0;padding:28px 28px 48px;max-width:none;background:#fff}
 .page-head{margin:0 0 28px;padding:0 0 20px;border-bottom:1px solid var(--line)}
 h1{font-size:30px;margin:0;font-weight:800;letter-spacing:-.03em;color:var(--text)}
 .page-lead{color:var(--muted);font-size:16px;margin:10px 0 0;max-width:720px;line-height:1.55;font-weight:400}
@@ -536,6 +536,8 @@ label.check input{width:20px;height:20px;min-height:20px;padding:0;flex:none;acc
 @media(min-width:640px){.grid .span2{grid-column:span 2}}
 .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:var(--radius);background:#fff;margin:10px 0 18px;box-shadow:var(--shadow)}
 .table-scroll table{margin:0;border:0;border-radius:0;min-width:640px}
+table.one{width:max-content;min-width:100%}
+table.one td,table.one th{white-space:nowrap}
 table{border-collapse:collapse;width:100%;background:#fff}
 td,th{padding:13px 16px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
 th{background:#fafafa;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;position:sticky;top:0}
@@ -555,8 +557,11 @@ button.ghost,.btn.ghost{background:#fff;color:var(--text);border:1px solid var(-
 button.ghost:hover,.btn.ghost:hover{background:var(--surface2);box-shadow:var(--shadow)}
 button.danger,.btn.danger{background:var(--bad)}button.danger:hover{background:#b91c1c}
 button.ok,.btn.ok{background:var(--ok)}button.ok:hover{background:#15803d}
-form.inline{display:inline-flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0}
-form.inline input{width:auto;min-width:120px;max-width:200px}
+form.inline{display:inline-flex;gap:8px;flex-wrap:nowrap;align-items:center;margin:0}
+form.inline input{width:150px;min-width:120px;max-width:180px;padding:8px 10px;min-height:40px}
+form.inline button{min-height:40px;padding:8px 14px;white-space:nowrap}
+td.actions{white-space:nowrap}
+td.actions form{margin-right:6px}
 .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
 .row label{flex:1 1 180px;min-width:150px}
 .pager{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}
@@ -584,6 +589,8 @@ code{font-family:ui-monospace,monospace;font-size:12px;background:#f5f5f5;paddin
   .row button,.row .btn,.row label{width:100%}
   form.inline{width:100%;flex-direction:column;align-items:stretch}
   form.inline input{max-width:none;width:100%}
+  td.actions form.inline{width:auto;flex-direction:row}
+  td.actions form.inline input{width:140px;max-width:160px}
   .stats,.quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(min-width:961px){.nav-wrap[open] summary,.nav-wrap summary{display:none}}
@@ -1470,7 +1477,7 @@ CSS;
             '<label>Coin per 1 BDT<input type="number" name="coinPerBdt" value="', self::e($c['coinPerBdt']), '"></label>',
             '</div><button>Save redeem settings</button></form></div></section>',
             '<section class="section"><h2>Requests</h2>', self::tableScrollOpen(),
-            '<table><tr><th>ID<th>Player<th>Phone<th>Pico coin<th>BDT<th>Wallet<th>Status<th>Submitted<th>Details<th></tr>';
+            '<table class="one"><tr><th>ID<th>Player<th>Phone<th>Pico coin<th>BDT<th>Wallet<th>Number<th>Status<th>Time<th>Balance<th>Action</tr>';
         foreach ($rows as $r) {
             $prov = Redeem::PROVIDERS[(string) $r['wallet_provider']] ?? $r['wallet_provider'];
             $phone = isset($r['phone']) && $r['phone'] !== null && $r['phone'] !== '' ? Phone::display((string) $r['phone']) : '—';
@@ -1482,22 +1489,22 @@ CSS;
             echo '<tr><td>', self::e($r['id']),
                 '<td><a href="', self::e($base), '/admin/player?id=', self::e($r['user_id']), '">', self::e($r['display_name']), '</a>',
                 '<td>', self::e($phone),
-                '<td>', self::e($r['coins']), '<td>', self::e($r['bdt_amount']), ' BDT',
-                '<td>', self::e($prov), '<br><code>', self::e($r['wallet_number']), '</code>',
+                '<td>', self::e($r['coins']), '<td>', self::e($r['bdt_amount']),
+                '<td>', self::e($prov),
+                '<td><code>', self::e($r['wallet_number']), '</code>',
                 '<td>', $pill,
                 '<td>', self::e($r['created_at']),
-                '<td>Balance now: ', self::e($r['balance_now']),
-                $r['admin_note'] !== null && $r['admin_note'] !== '' ? '<br>Note: ' . self::e($r['admin_note']) : '',
-                $r['reviewed_at'] !== null ? '<br>Reviewed: ' . self::e($r['reviewed_at']) : '',
-                '<td>';
+                '<td>', self::e($r['balance_now']),
+                $r['admin_note'] !== null && $r['admin_note'] !== '' ? ' · ' . self::e($r['admin_note']) : '',
+                '<td class="actions">';
             if ($r['status'] === 'pending') {
                 echo '<form class="inline" method="post" action="', self::e($base), '/admin/redeem/approve">', self::csrfField($csrf),
                     '<input type="hidden" name="id" value="', self::e($r['id']), '">',
-                    '<input name="note" placeholder="Optional note" maxlength="255">',
-                    '<button class="ok">Approve</button></form> ',
+                    '<input name="note" placeholder="Note" maxlength="255">',
+                    '<button class="ok">Approve</button></form>',
                     '<form class="inline" method="post" action="', self::e($base), '/admin/redeem/reject">', self::csrfField($csrf),
                     '<input type="hidden" name="id" value="', self::e($r['id']), '">',
-                    '<input name="note" placeholder="Reason (required)" maxlength="255" required>',
+                    '<input name="note" placeholder="Reason" maxlength="255" required>',
                     '<button class="danger">Reject</button></form>';
             } else {
                 echo '—';
@@ -1505,7 +1512,7 @@ CSS;
             echo '</tr>';
         }
         if ($rows === []) {
-            echo '<tr><td colspan="10" class="muted">No requests in this list.</td></tr>';
+            echo '<tr><td colspan="11" class="muted">No requests in this list.</td></tr>';
         }
         echo '</table>', self::tableScrollClose(), '</section>';
         self::end();
@@ -1587,7 +1594,7 @@ CSS;
             '</select></label>',
             '</div><button>Save payment settings</button></form></div></section>',
             '<section class="section"><h2>Deposit requests</h2>', self::tableScrollOpen(),
-            '<table><tr><th>ID<th>Player<th>Phone<th>Method<th>From #<th>BDT<th>Pico coin<th>TrxID<th>Status<th>Time<th>Details<th></tr>';
+            '<table class="one"><tr><th>ID<th>Player<th>Phone<th>Method<th>From #<th>BDT<th>Pico coin<th>TrxID<th>Status<th>Time<th>Balance<th>Action</tr>';
         foreach ($rows as $r) {
             $prov = CoinDeposit::PROVIDERS[(string) $r['provider']] ?? $r['provider'];
             $phone = isset($r['phone']) && $r['phone'] !== null && $r['phone'] !== '' ? Phone::display((string) $r['phone']) : '—';
@@ -1606,18 +1613,17 @@ CSS;
                 '<td><code>', self::e($r['trx_id']), '</code>',
                 '<td>', $pill,
                 '<td>', self::e($r['created_at']),
-                '<td>Balance: ', self::e($r['balance_now']),
-                $r['admin_note'] !== null && $r['admin_note'] !== '' ? '<br>Note: ' . self::e($r['admin_note']) : '',
-                $r['reviewed_at'] !== null ? '<br>Reviewed: ' . self::e($r['reviewed_at']) : '',
-                '<td>';
+                '<td>', self::e($r['balance_now']),
+                $r['admin_note'] !== null && $r['admin_note'] !== '' ? ' · ' . self::e($r['admin_note']) : '',
+                '<td class="actions">';
             if ($r['status'] === 'pending') {
                 echo '<form class="inline" method="post" action="', self::e($base), '/admin/deposit/approve">', self::csrfField($csrf),
                     '<input type="hidden" name="id" value="', self::e($r['id']), '">',
-                    '<input name="note" placeholder="Optional note" maxlength="255">',
-                    '<button class="ok">Approve</button></form> ',
+                    '<input name="note" placeholder="Note" maxlength="255">',
+                    '<button class="ok">Approve</button></form>',
                     '<form class="inline" method="post" action="', self::e($base), '/admin/deposit/reject">', self::csrfField($csrf),
                     '<input type="hidden" name="id" value="', self::e($r['id']), '">',
-                    '<input name="note" placeholder="Reason (required)" maxlength="255" required>',
+                    '<input name="note" placeholder="Reason" maxlength="255" required>',
                     '<button class="danger">Reject</button></form>';
             } else {
                 echo '—';
