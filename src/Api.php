@@ -115,6 +115,9 @@ final class Api
             $method === 'POST' && preg_match('#^/games/(\d+)/actions$#', $path, $m) === 1 => GameService::act(
                 (int) $m[1], (int) Auth::user()['id'], Http::body()
             ),
+            $method === 'POST' && preg_match('#^/games/(\d+)/aim$#', $path, $m) === 1 => self::throttled('aim', 80, 10, static fn (): array => GameService::shareAim(
+                (int) $m[1], (int) Auth::user()['id'], Http::body()
+            )),
 
             default => throw ApiError::notFound('No such endpoint'),
         };

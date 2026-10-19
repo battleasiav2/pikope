@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS games (
   status      ENUM('active','finished') NOT NULL DEFAULT 'active',
   version     INT UNSIGNED    NOT NULL DEFAULT 1,
   state       LONGTEXT        NOT NULL,
+  aim         TEXT            NULL,
   has_bots    TINYINT(1)      NOT NULL DEFAULT 0,
   winner_id   BIGINT UNSIGNED NULL,
   created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
