@@ -9,13 +9,13 @@ final class CoinShop
     public const DEFAULTS = [
         'globalDiscountPercent' => 0,
         'packs' => [
-            ['id' => 'pack100', 'name' => '100', 'coins' => 100, 'discountPercent' => 0, 'priceCoins' => 100, 'active' => true, 'sort' => 0],
-            ['id' => 'pack200', 'name' => '200', 'coins' => 200, 'discountPercent' => 0, 'priceCoins' => 200, 'active' => true, 'sort' => 1],
-            ['id' => 'pack300', 'name' => '300', 'coins' => 300, 'discountPercent' => 0, 'priceCoins' => 300, 'active' => true, 'sort' => 2],
-            ['id' => 'pack500', 'name' => '500', 'coins' => 500, 'discountPercent' => 0, 'priceCoins' => 500, 'active' => true, 'sort' => 3],
-            ['id' => 'pack1000', 'name' => '1000', 'coins' => 1000, 'discountPercent' => 0, 'priceCoins' => 1000, 'active' => true, 'sort' => 4],
-            ['id' => 'pack5000', 'name' => '5000', 'coins' => 5000, 'discountPercent' => 0, 'priceCoins' => 5000, 'active' => true, 'sort' => 5],
-            ['id' => 'pack10000', 'name' => '10000', 'coins' => 10000, 'discountPercent' => 0, 'priceCoins' => 10000, 'active' => true, 'sort' => 6],
+            ['id' => 'pack100', 'name' => '100', 'coins' => 100, 'discountPercent' => 5, 'priceCoins' => 100, 'active' => true, 'sort' => 0],
+            ['id' => 'pack200', 'name' => '200', 'coins' => 200, 'discountPercent' => 7, 'priceCoins' => 200, 'active' => true, 'sort' => 1],
+            ['id' => 'pack300', 'name' => '300', 'coins' => 300, 'discountPercent' => 10, 'priceCoins' => 300, 'active' => true, 'sort' => 2],
+            ['id' => 'pack500', 'name' => '500', 'coins' => 500, 'discountPercent' => 15, 'priceCoins' => 500, 'active' => true, 'sort' => 3],
+            ['id' => 'pack1000', 'name' => '1000', 'coins' => 1000, 'discountPercent' => 20, 'priceCoins' => 1000, 'active' => true, 'sort' => 4],
+            ['id' => 'pack5000', 'name' => '5000', 'coins' => 5000, 'discountPercent' => 25, 'priceCoins' => 5000, 'active' => true, 'sort' => 5],
+            ['id' => 'pack10000', 'name' => '10000', 'coins' => 10000, 'discountPercent' => 30, 'priceCoins' => 10000, 'active' => true, 'sort' => 6],
         ],
     ];
 
@@ -34,8 +34,32 @@ final class CoinShop
         if (!is_array($merged['packs'] ?? null)) {
             $merged['packs'] = self::DEFAULTS['packs'];
         }
-        self::$config = self::normalize($merged);
+        self::$config = self::applyStandardBonusesIfUnset(self::normalize($merged));
         return self::$config;
+    }
+
+    /** @param array{globalDiscountPercent:int,packs:list<array<string,mixed>>} $c */
+    private static function applyStandardBonusesIfUnset(array $c): array
+    {
+        foreach ($c['packs'] as $p) {
+            if ((int) ($p['discountPercent'] ?? 0) > 0) {
+                return $c;
+            }
+        }
+        $byId = [];
+        foreach (self::DEFAULTS['packs'] as $d) {
+            $byId[(string) $d['id']] = (int) $d['discountPercent'];
+        }
+        $out = [];
+        foreach ($c['packs'] as $p) {
+            $id = (string) ($p['id'] ?? '');
+            if (isset($byId[$id])) {
+                $p['discountPercent'] = $byId[$id];
+            }
+            $out[] = $p;
+        }
+        $c['packs'] = $out;
+        return $c;
     }
 
     /** @param array<string,mixed> $raw */
@@ -186,6 +210,11 @@ final class CoinShop
                 'active' => (bool) ($p['active'] ?? true),
                 'sort' => (int) ($p['sort'] ?? 0),
             ];
+        }
+        if ($clean === []) {
+            foreach (self::DEFAULTS['packs'] as $p) {
+                $clean[] = $p;
+            }
         }
         return ['globalDiscountPercent' => $global, 'packs' => $clean];
     }
