@@ -83,6 +83,8 @@ final class Admin
                     self::pushTest();
                 case '/admin/support':
                     self::saveSupport();
+                case '/admin/app-update':
+                    self::saveAppUpdate();
             }
             throw ApiError::notFound('No such endpoint');
         }
@@ -107,6 +109,7 @@ final class Admin
             '/admin/promotions' => self::promotionsPage($csrf),
             '/admin/push' => self::pushPage($csrf),
             '/admin/support' => self::supportPage($csrf),
+            '/admin/app-update' => self::appUpdatePage($csrf),
             default => throw ApiError::notFound('No such endpoint'),
         };
     }
@@ -649,6 +652,7 @@ CSS;
                 'otp-sms' => ['SMS OTP', '/admin/otp-sms'],
                 'notices' => ['Notices', '/admin/notices'],
                 'support' => ['Support links', '/admin/support'],
+                'app-update' => ['App update', '/admin/app-update'],
             ],
         ];
         echo '<div class="shell"><details class="nav-wrap" open><summary>Menu — PikoPe Admin</summary>',
@@ -690,6 +694,7 @@ CSS;
             ['Push message', '/admin/push', 'APK notifications', 0],
             ['Notices', '/admin/notices', 'In-app news / banner', 0],
             ['Support links', '/admin/support', 'Facebook and Telegram', 0],
+            ['App update', '/admin/app-update', 'In-app APK update', 0],
             ['Coin shop', '/admin/coin-shop', 'Packs and discount', 0],
             ['SMS OTP', '/admin/otp-sms', 'Forgot password SMS', 0],
         ];
@@ -1930,6 +1935,41 @@ CSS;
             '<label class="span2">Facebook link<input name="facebook" maxlength="300" value="', self::e($c['facebook']), '" placeholder="https://facebook.com/yourpage"></label>',
             '<label class="span2">Telegram link<input name="telegram" maxlength="300" value="', self::e($c['telegram']), '" placeholder="https://t.me/yourchannel"></label>',
             '</div><button>Save support links</button></form></div></section>';
+        self::end();
+    }
+
+    private static function saveAppUpdate(): never
+    {
+        try {
+            AppUpdate::save([
+                'enabled' => ($_POST['enabled'] ?? '0') === '1',
+                'versionCode' => (int) ($_POST['versionCode'] ?? 0),
+                'versionName' => trim((string) ($_POST['versionName'] ?? '')),
+                'apkUrl' => trim((string) ($_POST['apkUrl'] ?? '')),
+                'notes' => trim((string) ($_POST['notes'] ?? '')),
+                'required' => ($_POST['required'] ?? '0') === '1',
+            ]);
+        } catch (ApiError $e) {
+            self::back('/admin/app-update', null, $e->getMessage());
+        }
+        self::back('/admin/app-update', 'App update saved.');
+    }
+
+    private static function appUpdatePage(string $csrf): never
+    {
+        $base = self::base();
+        $c = AppUpdate::config();
+        self::begin('App update', 'app-update');
+        self::pageLead('The installed app checks this when it opens. If the version code is higher than the one on the phone, it downloads the APK inside the app and Android opens the install screen. Players still confirm that install. Host the file on HTTPS (File Manager is fine) and paste the link. The build that first added this updater is version code 2.');
+        echo '<section class="section"><div class="card"><form method="post" action="', self::e($base), '/admin/app-update">', self::csrfField($csrf),
+            '<div class="grid">',
+            '<label class="check"><input type="checkbox" name="enabled" value="1"', $c['enabled'] ? ' checked' : '', '> Update is on</label>',
+            '<label class="check"><input type="checkbox" name="required" value="1"', $c['required'] ? ' checked' : '', '> Players must install it</label>',
+            '<label>Version code<input type="number" name="versionCode" min="1" max="999999" value="', self::e((int) $c['versionCode']), '" placeholder="3"></label>',
+            '<label>Version name<input name="versionName" maxlength="40" value="', self::e($c['versionName']), '" placeholder="1.0.2"></label>',
+            '<label class="span2">APK link<input name="apkUrl" maxlength="400" value="', self::e($c['apkUrl']), '" placeholder="https://pikope.bet369win.com/pikope.apk"></label>',
+            '<label class="span2">Note for players<textarea name="notes" rows="3" maxlength="400">', self::e($c['notes']), '</textarea></label>',
+            '</div><button>Save app update</button></form></div></section>';
         self::end();
     }
 }
