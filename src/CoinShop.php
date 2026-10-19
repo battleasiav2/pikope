@@ -9,10 +9,13 @@ final class CoinShop
     public const DEFAULTS = [
         'globalDiscountPercent' => 0,
         'packs' => [
-            ['id' => 'starter', 'name' => 'STARTER', 'coins' => 5000, 'discountPercent' => 0, 'priceCoins' => 0, 'active' => true, 'sort' => 0],
-            ['id' => 'player', 'name' => 'PLAYER', 'coins' => 15000, 'discountPercent' => 10, 'priceCoins' => 12000, 'active' => true, 'sort' => 1],
-            ['id' => 'pro', 'name' => 'PRO', 'coins' => 40000, 'discountPercent' => 15, 'priceCoins' => 32000, 'active' => true, 'sort' => 2],
-            ['id' => 'high_roller', 'name' => 'HIGH ROLLER', 'coins' => 100000, 'discountPercent' => 20, 'priceCoins' => 75000, 'active' => true, 'sort' => 3],
+            ['id' => 'pack100', 'name' => '100', 'coins' => 100, 'discountPercent' => 0, 'priceCoins' => 100, 'active' => true, 'sort' => 0],
+            ['id' => 'pack200', 'name' => '200', 'coins' => 200, 'discountPercent' => 0, 'priceCoins' => 200, 'active' => true, 'sort' => 1],
+            ['id' => 'pack300', 'name' => '300', 'coins' => 300, 'discountPercent' => 0, 'priceCoins' => 300, 'active' => true, 'sort' => 2],
+            ['id' => 'pack500', 'name' => '500', 'coins' => 500, 'discountPercent' => 0, 'priceCoins' => 500, 'active' => true, 'sort' => 3],
+            ['id' => 'pack1000', 'name' => '1000', 'coins' => 1000, 'discountPercent' => 0, 'priceCoins' => 1000, 'active' => true, 'sort' => 4],
+            ['id' => 'pack5000', 'name' => '5000', 'coins' => 5000, 'discountPercent' => 0, 'priceCoins' => 5000, 'active' => true, 'sort' => 5],
+            ['id' => 'pack10000', 'name' => '10000', 'coins' => 10000, 'discountPercent' => 0, 'priceCoins' => 10000, 'active' => true, 'sort' => 6],
         ],
     ];
 

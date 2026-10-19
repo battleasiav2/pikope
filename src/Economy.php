@@ -20,8 +20,8 @@ final class Economy
         // 200 = full pot (1v1 stake 100 → win 200). 180 = stake 100 → win 180.
         'winPayoutPercent' => 200,
         // Stake per player at each level. Buy-in = stake + fee.
-        'billiardStakes' => [20, 100, 500, 2000, 5000],
-        'pokerStakes' => [20, 100, 500, 2000, 5000],
+        'billiardStakes' => [25, 50, 100, 300, 500, 1000, 5000, 10000],
+        'pokerStakes' => [25, 50, 100, 300, 500, 1000, 5000, 10000],
         // Billiard poker: the prize is stake x multiplier, drawn per match.
         // Weights are occurrences per 100,000,000 matches.
         'jackpot' => [

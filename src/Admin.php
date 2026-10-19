@@ -1653,7 +1653,7 @@ CSS;
         $c = CoinShop::config();
         $global = (int) $c['globalDiscountPercent'];
         self::begin('Coin shop', 'coin-shop');
-        self::pageLead('In-app packs. Discount = bonus coins. Global discount stacks. Price 0 = one free claim per player.');
+        self::pageLead('Shop packs. The coin amount is what the player sends on the add-coin page. They can tap plus to buy that pack more than once. Edit a pack here and the app follows.');
         echo '<section class="section"><div class="card"><form class="row" method="post" action="', self::e($base), '/admin/coin-shop/global">', self::csrfField($csrf),
             '<label>Global discount on coins (%)<input type="number" name="globalDiscountPercent" min="0" max="100" required value="', self::e($global), '"></label>',
             '<button>Save global discount</button></form></div></section>',
