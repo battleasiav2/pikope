@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   xp            INT          NOT NULL DEFAULT 0,
   cue           VARCHAR(32)  NOT NULL DEFAULT 'classic',
   name_set      TINYINT(1)   NOT NULL DEFAULT 0,
+  name_changed_at DATETIME   NULL,
   daily_claimed_on DATE      NULL,
   daily_streak  INT          NOT NULL DEFAULT 0,
   wins          INT          NOT NULL DEFAULT 0,

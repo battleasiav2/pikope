@@ -140,10 +140,10 @@ final class Api
     {
         // Mobile networks put many players behind one address.
         RateLimit::hit('guest:' . RateLimit::ip(), 120, 3600);
-        $name = Auth::cleanName(Http::str('displayName', 40, false));
+        $name = Auth::randomDisplayName();
         $avatar = self::cleanAvatar(Http::str('avatar', 255, false)) ?? 'asset:avatar_1';
         Auth::assertReferralAvailable(Http::str('referralCode', 8, false));
-        Db::run('INSERT INTO users (display_name, avatar, is_guest, coins) VALUES (?, ?, 1, 0)', [$name, $avatar]);
+        Db::run('INSERT INTO users (display_name, avatar, is_guest, name_set, coins) VALUES (?, ?, 1, 1, 0)', [$name, $avatar]);
         $id = Db::lastId();
         Economy::move($id, (int) Economy::config()['startCoins'], 'welcome');
         Auth::attachReferral($id, Http::str('referralCode', 8, false));
@@ -172,9 +172,9 @@ final class Api
             Auth::attachReferral((int) $guest['id'], Http::str('referralCode', 8, false), true);
             return ['token' => Http::bearer(), 'user' => Auth::publicUser(Db::one('SELECT * FROM users WHERE id = ?', [$guest['id']]))];
         }
-        $name = Auth::cleanName(Http::str('displayName', 40, false));
+        $name = Auth::randomDisplayName();
         Auth::assertReferralAvailable(Http::str('referralCode', 8, false));
-        Db::run('INSERT INTO users (phone, password_hash, display_name, is_guest, coins) VALUES (?, ?, ?, 0, 0)', [$phone, $hash, $name]);
+        Db::run('INSERT INTO users (phone, password_hash, display_name, is_guest, name_set, coins) VALUES (?, ?, ?, 0, 1, 0)', [$phone, $hash, $name]);
         $id = Db::lastId();
         Economy::move($id, (int) Economy::config()['startCoins'], 'welcome');
         Auth::attachReferral($id, Http::str('referralCode', 8, false));
@@ -284,6 +284,7 @@ final class Api
     private static function updateMe(): array
     {
         $user = Auth::user();
+        Auth::ensureNameChangedColumn();
         $name = Http::str('displayName', 40, false);
         $avatar = self::cleanAvatar(Http::str('avatar', 255, false));
         $skin = Http::str('tableSkin', 32, false);
@@ -293,13 +294,21 @@ final class Api
         if ($name !== '' && preg_match('/^[A-Za-z0-9_]{3,16}$/', $name) !== 1) {
             throw ApiError::badRequest('Use 3-16 letters, numbers or _ for your nickname', 'bad_name');
         }
+        $rename = $name !== '' && $name !== (string) $user['display_name'];
+        if ($rename) {
+            $allowed = Auth::nameChangeAllowedAt($user);
+            if ($allowed !== null) {
+                throw ApiError::badRequest('You can change your name again after ' . substr($allowed, 0, 10), 'name_cooldown');
+            }
+        }
         Db::run(
-            'UPDATE users SET display_name = ?, avatar = ?, table_skin = ?, name_set = ? WHERE id = ?',
+            'UPDATE users SET display_name = ?, avatar = ?, table_skin = ?, name_set = ?, name_changed_at = ? WHERE id = ?',
             [
-                $name === '' ? $user['display_name'] : $name,
+                $rename ? $name : $user['display_name'],
                 $avatar ?? $user['avatar'],
                 $skin === '' ? $user['table_skin'] : $skin,
-                $name === '' ? $user['name_set'] : 1,
+                $rename ? 1 : $user['name_set'],
+                $rename ? date('Y-m-d H:i:s') : ($user['name_changed_at'] ?? null),
                 $user['id'],
             ]
         );

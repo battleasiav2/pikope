@@ -24,6 +24,7 @@ $columns = [
         'referral_code' => 'CHAR(6) NULL',
         'referred_by' => 'BIGINT UNSIGNED NULL',
         'phone' => 'CHAR(13) NULL',
+        'name_changed_at' => 'DATETIME NULL',
     ],
     'room_players' => [
         'joined_at' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',

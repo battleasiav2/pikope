@@ -47,7 +47,27 @@ final class Auth
     {
         // Nicknames are letters, numbers and underscores only.
         $name = substr(preg_replace('/[^A-Za-z0-9_]/', '', $name) ?? '', 0, 16);
-        return strlen($name) < 3 ? 'Player' . random_int(1000, 9999) : $name;
+        return strlen($name) < 3 ? self::randomDisplayName() : $name;
+    }
+
+    /** A unique-looking nickname for sign-up. The player can rename later in settings. */
+    public static function randomDisplayName(): string
+    {
+        $first = ['Shadow', 'Lucky', 'Royal', 'Silent', 'Rapid', 'Cosmic', 'Golden', 'Turbo', 'Iron', 'Nova', 'Swift', 'Bold'];
+        $second = ['Shark', 'Ace', 'Cue', 'Fox', 'King', 'Storm', 'Wolf', 'Star', 'Hawk', 'Lion', 'Jet', 'Pro'];
+        for ($i = 0; $i < 8; $i++) {
+            $name = $first[random_int(0, count($first) - 1)]
+                . '_'
+                . $second[random_int(0, count($second) - 1)]
+                . random_int(10, 99);
+            if (strlen($name) > 16) {
+                $name = substr($name, 0, 16);
+            }
+            if (Db::one('SELECT id FROM users WHERE display_name = ?', [$name]) === null) {
+                return $name;
+            }
+        }
+        return 'Player' . random_int(100000, 999999);
     }
 
     /** @param array<string,mixed> $u @return array<string,mixed> */
@@ -67,6 +87,7 @@ final class Auth
             'cue' => $u['cue'],
             'cues' => Economy::ownedCues((int) $u['id']),
             'nameSet' => (bool) $u['name_set'],
+            'nameChangeAllowedAt' => self::nameChangeAllowedAt($u),
             'wins' => (int) $u['wins'],
             'games' => (int) $u['games'],
             'isGuest' => (bool) $u['is_guest'],
@@ -76,6 +97,33 @@ final class Auth
             'referralCode' => self::ensureReferralCode($u),
             'referredBy' => isset($u['referred_by']) && $u['referred_by'] !== null ? (int) $u['referred_by'] : null,
         ];
+    }
+
+    public static function ensureNameChangedColumn(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+        $have = Db::pdo()->query("SHOW COLUMNS FROM users LIKE 'name_changed_at'")->fetch();
+        if ($have === false) {
+            Db::pdo()->exec('ALTER TABLE users ADD COLUMN name_changed_at DATETIME NULL');
+        }
+    }
+
+    /** ISO-8601 time when the next rename is allowed, or null if they can rename now. */
+    public static function nameChangeAllowedAt(array $u): ?string
+    {
+        $changed = $u['name_changed_at'] ?? null;
+        if (!is_string($changed) || $changed === '') {
+            return null;
+        }
+        $until = strtotime($changed . ' +7 days');
+        if ($until === false || $until <= time()) {
+            return null;
+        }
+        return gmdate('c', $until);
     }
 
     /** A short code this player can share. Created once. @param array<string,mixed> $u */
