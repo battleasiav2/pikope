@@ -46,6 +46,14 @@ $columns = [
     'wallet_tx' => [
         'ref_user_id' => 'BIGINT UNSIGNED NULL',
     ],
+    'user_notifications' => [
+        'event_key' => 'VARCHAR(80) NULL',
+    ],
+    'zinipay_deposits' => [
+        'pack_id' => 'VARCHAR(32) NULL',
+        'base_coins' => 'INT NOT NULL DEFAULT 0',
+        'bonus_coins' => 'INT NOT NULL DEFAULT 0',
+    ],
 ];
 $pdo = App\Db::pdo();
 foreach ($columns as $table => $defs) {
@@ -93,4 +101,12 @@ if (!str_contains($redeemStatus, 'cancelled')) {
 App\AdminAlert::ensureTable();
 App\CoinTransfer::ensureTable();
 App\ZiniPay::ensureTable();
+$notifIdx = $pdo->query("SHOW INDEX FROM user_notifications WHERE Key_name = 'uq_notif_event'")->fetch();
+if ($notifIdx === false) {
+    $hasKey = $pdo->query("SHOW COLUMNS FROM user_notifications LIKE 'event_key'")->fetch();
+    if ($hasKey !== false) {
+        $pdo->exec('CREATE UNIQUE INDEX uq_notif_event ON user_notifications (user_id, event_key)');
+        echo "added user_notifications.uq_notif_event\n";
+    }
+}
 echo "Schema is up to date.\n";

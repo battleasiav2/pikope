@@ -85,7 +85,9 @@ final class ChallengeService
                 $toUserId,
                 'challenge',
                 'New challenge',
-                ($user['display_name'] ?? 'A player') . ' invited you to a match.'
+                ($user['display_name'] ?? 'A player') . ' invited you to a match.',
+                [],
+                'challenge:' . $id
             );
             return self::view($id);
         });

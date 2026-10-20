@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PikoPe — অফিশিয়াল APK ডাউনলোড">
+  <meta name="theme-color" content="#1E1E21">
+  <title>PikoPe</title>
+  <link rel="icon" href="assets/app_icon.jpg" type="image/jpeg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body class="loading">
+  <div class="bg-photo" aria-hidden="true"></div>
+  <div class="bg-scrim" aria-hidden="true"></div>
+
+  <header class="store-topbar">
+    <a class="topbar-brand" href="/"><img src="assets/pikope_logo.png" alt="PikoPe" height="32"></a>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="active" data-lang="bn">বাংলা</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </header>
+
+  <div class="store-page">
+    <section class="store-identity">
+      <div class="app-icon-wrap">
+        <img class="app-icon" src="assets/app_icon.jpg" alt="PikoPe">
+      </div>
+      <div class="app-titles">
+        <h1>PikoPe</h1>
+        <p class="app-dev">pikope.com</p>
+        <p class="app-sub" id="headline">দক্ষতার গেমিং</p>
+        <p class="app-tag" id="tagline"></p>
+      </div>
+    </section>
+
+    <section class="store-metrics" aria-label="Stats">
+      <div class="metric">
+        <strong id="stat-rating">4.8</strong>
+        <span>★ <span data-i18n="metricReviews">রিভিউ</span></span>
+        <small id="stat-reviews">12K+</small>
+      </div>
+      <div class="metric-div"></div>
+      <div class="metric">
+        <strong id="stat-downloads">500K+</strong>
+        <span data-i18n="metricDownloads">ডাউনলোড</span>
+      </div>
+      <div class="metric-div"></div>
+      <div class="metric">
+        <strong id="stat-rated">18+</strong>
+        <span data-i18n="metricRated">রেটেড</span>
+      </div>
+    </section>
+
+    <div class="store-actions">
+      <a class="btn-install" id="download-btn" href="#">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"/></svg>
+        <span class="btn-label">দ্রুত ইনস্টল</span>
+      </a>
+      <div class="secondary-actions">
+        <button type="button" class="link-action" id="btn-share">
+          <span data-i18n="actionShare">শেয়ার</span>
+        </button>
+      </div>
+    </div>
+
+    <section class="store-shots" id="screens" aria-label="Screenshots">
+      <div class="shot-scroll" id="shot-strip">
+        <div class="shot-placeholder card-panel">
+          <img src="assets/pikope_logo.png" alt="" width="72">
+          <p data-i18n="phScreens">অ্যাডমিন থেকে স্ক্রিনশট আপলোড করুন</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="store-panel card-panel" id="about">
+      <h2 data-i18n="aboutHeading">অ্যাপ সম্পর্কে</h2>
+      <p class="about-text" id="about-body"></p>
+      <ul class="feature-chips" id="features"></ul>
+      <div class="game-chips">
+        <span>🎱 Pool</span>
+        <span>🎲 Ludo</span>
+        <span>🎯 Carrom</span>
+      </div>
+    </section>
+
+    <section class="store-panel card-panel" id="updated">
+      <h2 data-i18n="updatedHeading">সর্বশেষ আপডেট</h2>
+      <p id="updated-label" data-i18n="updatedDefault">—</p>
+    </section>
+
+    <section class="store-panel card-panel" id="safety">
+      <h2 data-i18n="safetyHeading">ডেটা সুরক্ষা</h2>
+      <ul class="safety-list">
+        <li><span class="si">🔐</span><div><strong data-i18n="safe1t">এনক্রিপ্টেড সেশন</strong><p data-i18n="safe1p">সাইন-ইন ও ওয়ালেট ডেটা সার্ভারে সুরক্ষিত।</p></div></li>
+        <li><span class="si">📱</span><div><strong data-i18n="safe2t">অ্যাকাউন্ট নিয়ন্ত্রণ</strong><p data-i18n="safe2p">আপনার প্লেয়ার ID ও সেশন আপনার ডিভাইসে।</p></div></li>
+        <li><span class="si">🪙</span><div><strong data-i18n="safe3t">ওয়ালেট ledger</strong><p data-i18n="safe3p">কয়েন লেনদেনের রেকর্ড অ্যাপে দেখা যায়।</p></div></li>
+      </ul>
+    </section>
+
+    <section class="store-panel card-panel" id="reviews">
+      <h2 data-i18n="reviewsHeading">রেটিং ও রিভিউ</h2>
+      <div class="rating-summary">
+        <div class="rating-big" id="rating-display">4.8</div>
+        <div class="rating-bars">
+          <div class="bar-row"><span>5</span><div class="bar"><i style="width:92%"></i></div></div>
+          <div class="bar-row"><span>4</span><div class="bar"><i style="width:6%"></i></div></div>
+          <div class="bar-row"><span>3</span><div class="bar"><i style="width:1%"></i></div></div>
+          <div class="bar-row"><span>2</span><div class="bar"><i style="width:0%"></i></div></div>
+          <div class="bar-row"><span>1</span><div class="bar"><i style="width:1%"></i></div></div>
+        </div>
+      </div>
+      <article class="review-card">
+        <div class="review-head"><strong data-i18n="rev1name">রহিম</strong><span class="stars">★★★★★</span></div>
+        <p data-i18n="rev1text">Pool আর Ludo অনলাইন খেলা মসৃণ। Pico coin ওয়ালেট ঠিক অ্যাপের মতো।</p>
+      </article>
+      <article class="review-card">
+        <div class="review-head"><strong data-i18n="rev2name">Sadia</strong><span class="stars">★★★★★</span></div>
+        <p data-i18n="rev2text">Carrom টেবিল ভালো লাগে, APK pikope.com থেকে দ্রুত ইনস্টল হয়েছে।</p>
+      </article>
+    </section>
+
+    <section class="store-panel cta-panel">
+      <a class="btn-install btn-install--block" id="download-footer" href="#"><span class="btn-label">APK ডাউনলোড</span></a>
+    </section>
+
+    <footer class="store-footer">
+      <p>&copy; <span id="year"></span> PikoPe · pikope.com</p>
+      <p class="fine" data-i18n="footerFine">দক্ষতার বিনোদন · দায়িত্ব নিয়ে খেলুন</p>
+    </footer>
+  </div>
+
+  <script src="assets/config.js"></script>
+  <script src="assets/i18n.js"></script>
+  <script src="assets/app.js"></script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+</body>
+</html>

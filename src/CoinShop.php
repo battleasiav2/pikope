@@ -148,6 +148,27 @@ final class CoinShop
     }
 
     /** @return array<string,mixed>|null */
+    public static function packById(string $id): ?array
+    {
+        return self::findPack($id);
+    }
+
+    /** Active pack whose face value × qty equals BDT paid (e.g. 100 BDT → 100 pack @ 3% bonus). */
+    public static function packForBdt(int $bdt, int $qty = 1): ?array
+    {
+        $qty = max(1, min(50, $qty));
+        foreach (self::config()['packs'] as $p) {
+            if (!(bool) ($p['active'] ?? true)) {
+                continue;
+            }
+            if ((int) $p['coins'] * $qty === $bdt) {
+                return $p;
+            }
+        }
+        return null;
+    }
+
+    /** @return array<string,mixed>|null */
     private static function findPack(string $id): ?array
     {
         foreach (self::config()['packs'] as $p) {

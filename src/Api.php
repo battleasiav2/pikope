@@ -56,6 +56,7 @@ final class Api
             $method === 'GET' && $path === '/health' => ['ok' => true, 'time' => GameService::nowMs()],
             // Where the app finds the WebSocket server; null means it polls instead.
             $method === 'GET' && $path === '/app/update' => AppUpdate::published(),
+            $method === 'GET' && $path === '/landing/public' => self::landingPublic(),
             $method === 'GET' && $path === '/config' => [
                 'ws' => Config::get('WS_PUBLIC_URL') ?: null,
                 'facebook' => SupportLinks::config()['facebook'],
@@ -541,7 +542,15 @@ final class Api
 
     private static function ziniPayStart(): array
     {
-        return ZiniPay::start((int) Auth::user()['id'], self::int(Http::body(), 'bdt'));
+        $body = Http::body();
+        $packId = trim((string) ($body['packId'] ?? ''));
+        $qty = (int) ($body['qty'] ?? 1);
+        return ZiniPay::start(
+            (int) Auth::user()['id'],
+            self::int($body, 'bdt'),
+            $packId !== '' ? $packId : null,
+            $qty
+        );
     }
 
     private static function ziniPayFinish(): array
@@ -559,6 +568,13 @@ final class Api
     }
 
     /** Active operator announcements shown in the app (home banner / inbox). */
+    private static function landingPublic(): array
+    {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, OPTIONS');
+        return LandingPage::publicPayload();
+    }
+
     private static function notices(): array
     {
         Auth::user(); // signed-in only

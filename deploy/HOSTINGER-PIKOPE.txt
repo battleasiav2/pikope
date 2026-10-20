@@ -1,43 +1,34 @@
-PikoPe backend + admin — Hostinger (subdomain)
-==============================================
+PikoPe backend + admin — Hostinger (same DB as pikope.bet369win.com)
+=====================================================================
 
-Subdomain: pikope.bet369win.com
+Live API example: https://pikope.bet369win.com
+Also used:        https://adminnew.pikope.com  (set APP_URL in .env to your domain)
+Landing site:     https://pikope.com → public_html/ (site-pikope.com/)
 
-1) Upload & extract this zip so you have:
-     .../public_html/pikope/public/index.php
-     .../public_html/pikope/.env.example
-     (not inside public_html root only — keep the pikope folder)
-
-2) hPanel → Subdomains → pikope
+1) Git clone / pull → upload to:
+     public_html/pikope/
      Document root MUST be:
-     .../public_html/pikope/public
+     public_html/pikope/public
 
-3) Copy .env.example → .env and set:
+2) Copy .env.example → .env (never commit .env). Production pattern:
+     DB_HOST=localhost
+     DB_NAME=u811189100_pikope   (your hPanel MySQL name)
+     DB_USER=u811189100_pikope
+     DB_PASS=***
      APP_URL=https://pikope.bet369win.com
-     DB_* from hPanel → MySQL
-     ADMIN_USER=...
-     ADMIN_PASS=...   (12+ characters)
+     ADMIN_USER=admin
+     ADMIN_PASS=***  (change from default)
      APP_DEBUG=0
      APP_TEST_HOOKS=0
-     CORS_ORIGIN=   (leave empty; do not use *)
-     Optional: ADMIN_IP_ALLOWLIST=your.office.ip
-     Then SSH or cron: php bin/doctor.php  (all [ok] before go-live)
+     Then: php bin/migrate.php && php bin/doctor.php
 
-4) phpMyAdmin → Import → pikope/sql/schema.sql
-     OR Terminal: cd .../pikope && php bin/migrate.php
+3) Existing database: do NOT re-import schema.sql on production.
+     migrate.php only adds missing tables/columns — keeps player/wallet data.
 
-5) Test:
-     https://pikope.bet369win.com/health
-     https://pikope.bet369win.com/admin
+4) ZiniPay → Brand website = same host as APP_URL
+     Webhook: {APP_URL}/webhooks/zinipay
 
-6) Cron every 5 min:
-     php .../pikope/bin/cleanup.php
-     (watch "wallet drift" in output; should stay 0)
+5) Admin: {APP_URL}/admin
+     Landing (pikope.com): /admin/landing — APK, screenshots, BN/EN
 
-   Optional daily (alert if exit code 1):
-     php .../pikope/bin/reconcile_wallet.php
-
-7) APK:
-     flutter build apk --release --dart-define=API_BASE_URL=https://pikope.bet369win.com
-
-Admin is English only at /admin (HTTP Basic = ADMIN_USER / ADMIN_PASS).
+6) Cron every 5 min: php .../pikope/bin/cleanup.php

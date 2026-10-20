@@ -1,0 +1,37 @@
+PikoPe — MAIN DOMAIN ONLY: https://pikope.com
+================================================
+
+This folder is ONLY for the main domain pikope.com.
+Do NOT put these files under adminnew.pikope.com or public_html/pikope/.
+
+Hostinger layout (typical)
+--------------------------
+  pikope.com              →  public_html/          ← UPLOAD THIS FOLDER HERE
+  adminnew.pikope.com     →  public_html/pikope/public/   ← PHP backend (separate)
+
+Steps
+-----
+1) hPanel → Websites → pikope.com → File Manager → public_html
+
+2) Upload everything from site-pikope.com/:
+     index.html
+     assets/   (pikope_logo.png, hero-bg.jpg, config.js, styles.css, app.js)
+
+   Result:
+     https://pikope.com/
+     https://pikope.com/assets/styles.css
+
+3) Upload APK on the SAME main domain:
+     public_html/pikope-release.apk
+     → https://pikope.com/pikope-release.apk
+
+4) Admin (subdomain, not main site):
+     https://adminnew.pikope.com/admin/landing
+   - APK URL: https://pikope.com/pikope-release.apk
+   - Upload screenshots; save text
+
+5) Landing page loads data from API (subdomain):
+     https://adminnew.pikope.com/landing/public
+   assets/config.js already points apiBase there.
+
+6) SSL: enable for pikope.com in hPanel so https works.
