@@ -1,9 +1,7 @@
 PikoPe — MAIN DOMAIN: https://pikope.com (Play Store style landing)
 ================================================================
 
-Source folder for landing. Git also copies to repo root (index.html + assets/) via scripts/sync-landing-to-webroot.ps1 — same as pikope-landing-deploy.zip.
-
-Upload ONLY index.html + assets/ to pikope.com document root (public_html/), or use Git deploy to public_html.
+Upload ONLY this folder to pikope.com document root (public_html/).
 API + admin stay on https://adminnew.pikope.com (separate PHP deploy).
 
 WHAT THIS SITE DOES
@@ -27,7 +25,6 @@ HOSTINGER STEPS
    - Upload APK (.apk) — served as https://adminnew.pikope.com/uploads/landing/pikope-latest.apk
    - Upload hero background + screenshots (up to 8)
    - Edit BN/EN headline, tagline, features, stats, “updated” label
-   - Live support: Facebook + Telegram links (shown on landing + app Settings)
    - Save settings
 
 4) Test landing API (browser or curl):

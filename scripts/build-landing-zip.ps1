@@ -1,7 +1,7 @@
 # Same layout as manual Hostinger upload: index.html + assets/ at zip root.
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 & (Join-Path $PSScriptRoot "sync-landing-to-webroot.ps1") | Out-Null
-$out = Join-Path $env:USERPROFILE "Downloads\pikope-landing-deploy.zip"
+$out = Join-Path $env:USERPROFILE "Downloads\pikope-server-deploy.zip"
 if (Test-Path $out) { Remove-Item $out -Force }
 $items = @(
   (Join-Path $RepoRoot "index.html"),

@@ -134,33 +134,6 @@
     set('rating-display', s.rating);
   }
 
-  function renderSupport() {
-    const section = $('#live-support');
-    const box = $('#support-buttons');
-    if (!section || !box) return;
-    const fb = (apiData?.support?.facebook || '').trim();
-    const tg = (apiData?.support?.telegram || '').trim();
-    box.innerHTML = '';
-    if (!fb && !tg) {
-      section.hidden = true;
-      return;
-    }
-    section.hidden = false;
-    const lead = section.querySelector('.support-lead');
-    if (lead) lead.textContent = t('supportLead');
-    const mk = (href, cls, label) => {
-      const a = document.createElement('a');
-      a.className = 'support-btn ' + cls;
-      a.href = href;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = label;
-      return a;
-    };
-    if (fb) box.appendChild(mk(fb, 'support-btn--fb', t('supportFacebook')));
-    if (tg) box.appendChild(mk(tg, 'support-btn--tg', t('supportTelegram')));
-  }
-
   function applyDynamic() {
     const loc = localePack();
     document.title = 'PikoPe — ' + (loc.apkLabel || 'APK');
@@ -180,7 +153,6 @@
     setDownload(apiData?.apkUrl || cfg.fallbackApk || '#', loc.apkLabel);
     setHeroBg(apiData?.heroImageUrl || '');
     buildShots(apiData?.screenshots || []);
-    renderSupport();
     document.body.classList.remove('loading');
   }
 
