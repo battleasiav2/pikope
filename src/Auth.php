@@ -112,7 +112,21 @@ final class Auth
                 : null,
             'referralCode' => self::ensureReferralCode($u),
             'referredBy' => isset($u['referred_by']) && $u['referred_by'] !== null ? (int) $u['referred_by'] : null,
+            'challengesEnabled' => (bool) ($u['challenges_enabled'] ?? 1),
         ];
+    }
+
+    public static function ensureChallengesEnabledColumn(): void
+    {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+        $have = Db::pdo()->query("SHOW COLUMNS FROM users LIKE 'challenges_enabled'")->fetch();
+        if ($have === false) {
+            Db::pdo()->exec('ALTER TABLE users ADD COLUMN challenges_enabled TINYINT(1) NOT NULL DEFAULT 1');
+        }
     }
 
     public static function ensureNameChangedColumn(): void

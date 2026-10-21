@@ -2215,7 +2215,7 @@ CSS;
         $base = self::base();
         $c = SupportLinks::config();
         self::begin('Support links', 'support');
-        self::pageLead('These two buttons appear in the app Settings. Leave a box empty to hide that button. Paste a full link, such as https://facebook.com/yourpage or https://t.me/yourchannel.');
+        self::pageLead('Same links as on <b>pikope.com</b> (Landing page admin) and in app Settings. Leave empty to hide that button.');
         echo '<section class="section"><div class="card"><form method="post" action="', self::e($base), '/admin/support">', self::csrfField($csrf),
             '<div class="grid">',
             '<label class="span2">Facebook link<input name="facebook" maxlength="300" value="', self::e($c['facebook']), '" placeholder="https://facebook.com/yourpage"></label>',
@@ -2279,6 +2279,10 @@ CSS;
                 'heroImage' => $c['heroImage'],
                 'bn' => self::landingLocaleFromPost('bn'),
                 'en' => self::landingLocaleFromPost('en'),
+            ]);
+            SupportLinks::save([
+                'facebook' => trim((string) ($_POST['support_facebook'] ?? '')),
+                'telegram' => trim((string) ($_POST['support_telegram'] ?? '')),
             ]);
         } catch (ApiError $e) {
             self::back('/admin/landing', null, $e->getMessage());
@@ -2385,10 +2389,11 @@ CSS;
         $pub = LandingPage::publicPayload();
         $bn = $c['bn'];
         $en = $c['en'];
+        $support = SupportLinks::config();
         self::begin('Landing page (pikope.com)', 'landing');
         self::pageLead(
             '<b>pikope.com</b> loads <code>/landing/public</code> (default language: Bangla). '
-            . 'Upload APK, hero background, and screenshots here.'
+            . 'Upload APK, hero background, screenshots, and live support links (Facebook / Telegram) here.'
         );
 
         echo '<section class="section"><div class="card"><form method="post" action="', self::e($base), '/admin/landing/save">', self::csrfField($csrf),
@@ -2399,6 +2404,10 @@ CSS;
             '</select></label>',
             '<label class="span2">Optional APK URL (https) if no upload<input name="apkUrl" maxlength="400" value="', self::e($c['apkUrl']), '" placeholder="Leave empty: use uploaded APK, else App update"></label>',
             '<p class="hint">Live download: ', self::e($pub['apkUrl'] ?: '(none yet)'), '</p>',
+            '<h3>Live support (pikope.com + app Settings)</h3><div class="grid">',
+            '<label class="span2">Facebook link<input name="support_facebook" maxlength="300" value="', self::e($support['facebook']), '" placeholder="https://facebook.com/yourpage"></label>',
+            '<label class="span2">Telegram link<input name="support_telegram" maxlength="300" value="', self::e($support['telegram']), '" placeholder="https://t.me/yourchannel"></label>',
+            '</div><p class="hint">Empty = button hidden on landing and in app.</p>',
             '<h3>Store stats (Play-style row)</h3><div class="grid">',
             '<label>Rating<input name="statRating" maxlength="8" value="', self::e($c['statRating'] ?? ''), '"></label>',
             '<label>Reviews<input name="statReviews" maxlength="16" value="', self::e($c['statReviews'] ?? ''), '"></label>',

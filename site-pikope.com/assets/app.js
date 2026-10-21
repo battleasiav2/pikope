@@ -63,14 +63,26 @@
   }
 
   function setDownload(url, label) {
-    const href = url && url !== '#' ? url : cfg.fallbackApk || '#';
+    const href = url && url !== '#' ? url : cfg.fallbackApk || '';
     const text = label || (lang === 'bn' ? 'দ্রুত ইনস্টল' : 'Fast install');
+    const unavailable = t('apkUnavailable');
     ['#download-btn', '#download-footer'].forEach((sel) => {
       const el = $(sel);
       if (!el) return;
-      el.href = href;
       const span = el.querySelector('.btn-label');
-      if (span) span.textContent = text;
+      if (href) {
+        el.href = href;
+        el.classList.remove('btn-install--disabled');
+        el.removeAttribute('aria-disabled');
+        if (span) span.textContent = text;
+        el.onclick = null;
+      } else {
+        el.href = '#';
+        el.classList.add('btn-install--disabled');
+        el.setAttribute('aria-disabled', 'true');
+        if (span) span.textContent = unavailable;
+        el.onclick = (e) => e.preventDefault();
+      }
     });
   }
 
@@ -122,6 +134,33 @@
     set('rating-display', s.rating);
   }
 
+  function renderSupport() {
+    const section = $('#live-support');
+    const box = $('#support-buttons');
+    if (!section || !box) return;
+    const fb = (apiData?.support?.facebook || '').trim();
+    const tg = (apiData?.support?.telegram || '').trim();
+    box.innerHTML = '';
+    if (!fb && !tg) {
+      section.hidden = true;
+      return;
+    }
+    section.hidden = false;
+    const lead = section.querySelector('.support-lead');
+    if (lead) lead.textContent = t('supportLead');
+    const mk = (href, cls, label) => {
+      const a = document.createElement('a');
+      a.className = 'support-btn ' + cls;
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = label;
+      return a;
+    };
+    if (fb) box.appendChild(mk(fb, 'support-btn--fb', t('supportFacebook')));
+    if (tg) box.appendChild(mk(tg, 'support-btn--tg', t('supportTelegram')));
+  }
+
   function applyDynamic() {
     const loc = localePack();
     document.title = 'PikoPe — ' + (loc.apkLabel || 'APK');
@@ -141,6 +180,7 @@
     setDownload(apiData?.apkUrl || cfg.fallbackApk || '#', loc.apkLabel);
     setHeroBg(apiData?.heroImageUrl || '');
     buildShots(apiData?.screenshots || []);
+    renderSupport();
     document.body.classList.remove('loading');
   }
 

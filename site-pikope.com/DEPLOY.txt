@@ -1,37 +1,44 @@
-PikoPe — MAIN DOMAIN ONLY: https://pikope.com
-================================================
+PikoPe — MAIN DOMAIN: https://pikope.com (Play Store style landing)
+================================================================
 
-This folder is ONLY for the main domain pikope.com.
-Do NOT put these files under adminnew.pikope.com or public_html/pikope/.
+Upload ONLY this folder to pikope.com document root (public_html/).
+API + admin stay on https://adminnew.pikope.com (separate PHP deploy).
 
-Hostinger layout (typical)
---------------------------
-  pikope.com              →  public_html/          ← UPLOAD THIS FOLDER HERE
-  adminnew.pikope.com     →  public_html/pikope/public/   ← PHP backend (separate)
+WHAT THIS SITE DOES
+-------------------
+- Loads copy, stats, hero, screenshots, and APK download URL from:
+  https://adminnew.pikope.com/landing/public
+- Default language: Bangla (BN/EN toggle on page).
+- APK is NOT stored on pikope.com — upload in admin (see below).
 
-Steps
------
-1) hPanel → Websites → pikope.com → File Manager → public_html
+HOSTINGER STEPS
+---------------
+1) pikope.com → File Manager → public_html
+   Upload: index.html + entire assets/ folder
 
-2) Upload everything from site-pikope.com/:
-     index.html
-     assets/   (pikope_logo.png, hero-bg.jpg, config.js, styles.css, app.js)
+2) adminnew.pikope.com → ensure backend deployed, .env APP_URL set, migrate run:
+   https://adminnew.pikope.com/health
+   https://adminnew.pikope.com/admin
 
-   Result:
-     https://pikope.com/
-     https://pikope.com/assets/styles.css
+3) Admin → Landing page (pikope.com):
+   https://adminnew.pikope.com/admin/landing
+   - Upload APK (.apk) — served as https://adminnew.pikope.com/uploads/landing/pikope-latest.apk
+   - Upload hero background + screenshots (up to 8)
+   - Edit BN/EN headline, tagline, features, stats, “updated” label
+   - Live support: Facebook + Telegram links (shown on landing + app Settings)
+   - Save settings
 
-3) Upload APK on the SAME main domain:
-     public_html/pikope-release.apk
-     → https://pikope.com/pikope-release.apk
+4) Test landing API (browser or curl):
+   https://adminnew.pikope.com/landing/public
+   → must include "apkUrl" after APK upload
 
-4) Admin (subdomain, not main site):
-     https://adminnew.pikope.com/admin/landing
-   - APK URL: https://pikope.com/pikope-release.apk
-   - Upload screenshots; save text
+5) Test site:
+   https://pikope.com/
+   Download button should point to admin-hosted APK URL.
 
-5) Landing page loads data from API (subdomain):
-     https://adminnew.pikope.com/landing/public
-   assets/config.js already points apiBase there.
+6) SSL: enable HTTPS for both pikope.com and adminnew.pikope.com.
 
-6) SSL: enable for pikope.com in hPanel so https works.
+NOTE
+----
+assets/config.js apiBase is https://adminnew.pikope.com — change only if API host changes.
+Do not put a manual pikope-release.apk on pikope.com unless you also set “APK URL” in admin.

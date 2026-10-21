@@ -28,20 +28,31 @@ final class ChallengeService
     public static function online(array $user): array
     {
         $uid = (int) $user['id'];
+        Auth::ensureChallengesEnabledColumn();
         $rows = Db::all(
-            "SELECT u.id, u.display_name, u.avatar, u.coins, u.wins, u.xp,
+            "SELECT u.id, u.display_name, u.avatar, u.coins, u.wins, u.xp, u.challenges_enabled,
                     EXISTS (SELECT 1 FROM game_players gp JOIN games g ON g.id = gp.game_id
-                            WHERE gp.user_id = u.id AND g.status = 'active') AS busy
+                            WHERE gp.user_id = u.id AND g.status = 'active') AS busy,
+                    (SELECT g.game FROM game_players gp JOIN games g ON g.id = gp.game_id
+                     WHERE gp.user_id = u.id AND g.status = 'active' LIMIT 1) AS active_game,
+                    (SELECT r.game FROM room_players rp JOIN rooms r ON r.id = rp.room_id
+                     WHERE rp.user_id = u.id AND r.status = 'waiting' LIMIT 1) AS waiting_game
              FROM users u JOIN (" . self::ONLINE_SQL . ") t ON t.user_id = u.id
              WHERE t.la > DATE_SUB(NOW(), INTERVAL 3 MINUTE) AND u.id <> ? AND u.banned = 0
              ORDER BY busy ASC, t.la DESC LIMIT 60",
             [$uid]
         );
-        return array_map(static fn ($r) => [
-            'id' => (int) $r['id'], 'name' => $r['display_name'], 'avatar' => $r['avatar'], 'coins' => (int) $r['coins'],
-            'level' => Economy::levelOf((int) $r['xp'])['level'], 'rank' => Economy::rankOf((int) $r['wins'])['name'],
-            'busy' => (bool) $r['busy'],
-        ], $rows);
+        return array_map(static function ($r) {
+            $busy = (bool) $r['busy'];
+            $game = $busy ? (string) ($r['active_game'] ?? '') : (string) ($r['waiting_game'] ?? '');
+            return [
+                'id' => (int) $r['id'], 'name' => $r['display_name'], 'avatar' => $r['avatar'], 'coins' => (int) $r['coins'],
+                'level' => Economy::levelOf((int) $r['xp'])['level'], 'rank' => Economy::rankOf((int) $r['wins'])['name'],
+                'busy' => $busy,
+                'game' => $game,
+                'acceptsChallenges' => (bool) ($r['challenges_enabled'] ?? 1),
+            ];
+        }, $rows);
     }
 
     public static function send(array $user, int $toUserId, string $game, ?int $level): array
@@ -53,12 +64,17 @@ final class ChallengeService
         if (!in_array($game, self::GAMES, true)) {
             throw ApiError::badRequest('That game cannot be challenged', 'bad_game');
         }
-        $target = Db::one('SELECT id, display_name, avatar FROM users WHERE id = ? AND banned = 0', [$toUserId]);
+        Auth::ensureChallengesEnabledColumn();
+        $target = Db::one('SELECT id, display_name, avatar, challenges_enabled FROM users WHERE id = ? AND banned = 0', [$toUserId]);
         if ($target === null) {
             throw ApiError::notFound('No such player');
         }
+        if (!(bool) ($target['challenges_enabled'] ?? 1)) {
+            throw ApiError::conflict('That player is not accepting challenges', 'challenges_off');
+        }
         RateLimit::hit('challenge:' . $uid, 30, 300);
-        $bet = $level === null ? ['stake' => 0, 'fee' => 0, 'buyIn' => 0] : Economy::level('billiard', $level);
+        $stakeMode = $game === 'poker' ? 'poker' : 'billiard';
+        $bet = $level === null ? ['stake' => 0, 'fee' => 0, 'buyIn' => 0] : Economy::level($stakeMode, $level);
         if ((int) $user['coins'] < ($bet['buyIn'] ?? 0)) {
             throw ApiError::conflict('Not enough coins for this stake', 'not_enough_coins');
         }

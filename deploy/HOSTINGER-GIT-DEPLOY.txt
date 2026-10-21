@@ -1,0 +1,69 @@
+PikoPe — Git push → Hostinger auto deploy
+=======================================
+
+Repo: https://github.com/battleasiav2/pikope
+Branch: main
+
+WHAT DEPLOYS
+------------
+1) site-pikope.com/*  →  pikope.com document root (FTP_LANDING_DIR)
+2) PHP backend        →  adminnew folder (FTP_BACKEND_DIR), NOT .env
+
+CURSOR WORKFLOW
+---------------
+1. Edit in duelx/backend + duelx/site-pikope.com (or edit this repo directly)
+2. Sync to pikope-github if needed, then:
+   git add -A && git commit -m "..." && git push origin main
+3. GitHub Actions "Deploy Hostinger" runs (or trigger manually: Actions tab)
+
+ONE-TIME: GitHub Secrets (Settings → Secrets and variables → Actions)
+--------------------------------------------------------------------
+FTP_SERVER          ftp.pikope.com or Hostinger FTP hostname (hPanel → FTP)
+FTP_USERNAME        FTP user (often u123456789 or main account)
+FTP_PASSWORD        FTP password
+FTP_LANDING_DIR     Remote path to pikope.com public_html, examples:
+                      /domains/pikope.com/public_html
+                      /public_html
+FTP_BACKEND_DIR     Remote path to backend root (contains public/, src/, bin/):
+                      /domains/adminnew.pikope.com/public_html/pikope
+                      /public_html/pikope
+
+Optional repository Variables (Settings → Variables):
+  FTP_DEPLOY_ENABLED = false   (disable auto deploy without deleting workflow)
+  FTP_DRY_RUN = true           (test upload only)
+
+Optional secret FTP_PORT = 21 (default)
+
+HOSTINGER PATH HELP
+-------------------
+hPanel → Files → open public_html → path shown in address bar = use in secrets.
+Subdomain adminnew docroot must still point to: .../pikope/public
+
+NEVER IN GIT
+------------
+.env on server — create once from .env.example; FTP deploy excludes .env
+
+AFTER FIRST BACKEND DEPLOY
+--------------------------
+SSH or hPanel Terminal:
+  cd ~/public_html/pikope   (your FTP_BACKEND_DIR)
+  cp .env.example .env      (only first time)
+  nano .env
+  php bin/migrate.php
+
+MANUAL SSH UPDATE (instead of FTP Action)
+-----------------------------------------
+If Git is enabled on server in pikope folder:
+  bash deploy/hostinger-pull.sh
+
+LANDING ONLY (manual)
+---------------------
+Upload site-pikope.com/ contents to pikope.com public_html via File Manager
+or run workflow with workflow_dispatch after changing only landing files.
+
+TROUBLESHOOT
+------------
+- Actions fail "550": wrong FTP_LANDING_DIR or FTP_BACKEND_DIR
+- Admin 500: .env missing or migrate not run
+- Landing old: clear browser cache; check /landing/public on adminnew
+- Disable auto deploy: set variable FTP_DEPLOY_ENABLED=false

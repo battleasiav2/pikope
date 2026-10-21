@@ -25,6 +25,7 @@ $columns = [
         'referred_by' => 'BIGINT UNSIGNED NULL',
         'phone' => 'CHAR(13) NULL',
         'name_changed_at' => 'DATETIME NULL',
+        'challenges_enabled' => 'TINYINT(1) NOT NULL DEFAULT 1',
     ],
     'room_players' => [
         'joined_at' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',

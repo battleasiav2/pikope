@@ -19,6 +19,8 @@ Backend and web admin for the PikoPe / DuelX Android app. Works on **shared host
 
 See `deploy/HOSTINGER-PIKOPE.txt` for the full checklist.
 
+**Auto deploy:** push to `main` runs GitHub Actions FTP (landing + backend). One-time setup: `deploy/HOSTINGER-GIT-DEPLOY.txt`.
+
 ## APK
 
 Release builds need `android/key.properties` (see `duelx/android/key.properties.example` in the Flutter repo).

@@ -128,6 +128,7 @@ final class LandingPage
             ],
             'updatedLabel' => (string) $c['updatedLabel'],
             'apiBase' => $base,
+            'support' => SupportLinks::config(),
         ];
     }
 

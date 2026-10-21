@@ -183,8 +183,8 @@ final class Api
         RateLimit::hit('register:' . RateLimit::ip(), 20, 3600);
         $phone = Phone::normalize(Http::str('phone', 20));
         $password = Http::str('password', 200);
-        if (strlen($password) < 8) {
-            throw ApiError::badRequest('Password must be at least 8 characters', 'weak_password');
+        if (strlen($password) < 6) {
+            throw ApiError::badRequest('Password must be at least 6 characters', 'weak_password');
         }
         if (Db::one('SELECT id FROM users WHERE phone = ?', [$phone]) !== null) {
             throw ApiError::conflict('That mobile number is already registered', 'phone_taken');
@@ -312,7 +312,10 @@ final class Api
     {
         $user = Auth::user();
         Auth::ensureNameChangedColumn();
+        Auth::ensureChallengesEnabledColumn();
         $name = Http::str('displayName', 40, false);
+        $body = Http::body();
+        $challenges = array_key_exists('challengesEnabled', $body) ? (bool) $body['challengesEnabled'] : null;
         $avatar = self::cleanAvatar(Http::str('avatar', 255, false));
         $skin = Http::str('tableSkin', 32, false);
         if ($skin !== '' && !Economy::poolBoardAllowed((int) $user['id'], $skin)) {
@@ -329,13 +332,14 @@ final class Api
             }
         }
         Db::run(
-            'UPDATE users SET display_name = ?, avatar = ?, table_skin = ?, name_set = ?, name_changed_at = ? WHERE id = ?',
+            'UPDATE users SET display_name = ?, avatar = ?, table_skin = ?, name_set = ?, name_changed_at = ?, challenges_enabled = ? WHERE id = ?',
             [
                 $rename ? $name : $user['display_name'],
                 $avatar ?? $user['avatar'],
                 $skin === '' ? $user['table_skin'] : $skin,
                 $rename ? 1 : $user['name_set'],
                 $rename ? date('Y-m-d H:i:s') : ($user['name_changed_at'] ?? null),
+                $challenges === null ? (int) ($user['challenges_enabled'] ?? 1) : ($challenges ? 1 : 0),
                 $user['id'],
             ]
         );

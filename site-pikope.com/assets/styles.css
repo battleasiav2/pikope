@@ -181,6 +181,42 @@ body {
   animation: pulse 3s ease-in-out infinite;
 }
 .btn-install--block { margin-top: 8px; }
+.btn-install--disabled {
+  background: linear-gradient(180deg, #3a3a42, #2a2a30);
+  box-shadow: none;
+  cursor: not-allowed;
+  animation: none;
+  opacity: 0.85;
+}
+.btn-install--disabled::after { display: none; }
+
+.store-support { margin-top: 12px; }
+.support-lead {
+  margin: 0 0 14px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.support-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.support-btn {
+  flex: 1 1 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+.support-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.support-btn--fb { background: linear-gradient(180deg, #1877f2, #0d5dbf); }
+.support-btn--tg { background: linear-gradient(180deg, #2aabee, #229ed9); }
 .btn-install::after {
   content: "";
   position: absolute;

@@ -1,6 +1,6 @@
-/** Change only if your API host differs. */
+/** APK URL comes from admin upload → GET /landing/public (no static APK on pikope.com). */
 window.PIKOPE_LANDING = {
-  apiBase: 'https://pikope.bet369win.com',
+  apiBase: 'https://adminnew.pikope.com',
   defaultLang: 'bn',
-  fallbackApk: 'https://pikope.com/pikope-release.apk',
+  fallbackApk: '',
 };
