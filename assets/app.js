@@ -58,8 +58,12 @@
   }
 
   function setHeroBg(url) {
+    if (!url) return;
+    const css = 'url("' + url.replace(/"/g, '\\"') + '")';
     const el = $('.bg-photo');
-    if (el && url) el.style.backgroundImage = 'url("' + url.replace(/"/g, '\\"') + '")';
+    const feat = document.getElementById('store-feature');
+    if (el) el.style.backgroundImage = css;
+    if (feat) feat.style.backgroundImage = css;
   }
 
   function setDownload(url, label) {
