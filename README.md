@@ -1,55 +1,34 @@
-# PikoPe — PHP API + Admin (Hostinger)
+# PikoPe — full project (monorepo)
 
-Backend and web admin for the PikoPe / DuelX Android app. Works on **shared hosting** (HTTP polling; no WebSocket required).
+One repository: **Flutter app**, **PHP admin/API**, **pikope.com landing**, and **APK releases**.
 
-## Hostinger quick setup
+| Part | Path | Live URL |
+|------|------|----------|
+| Backend + admin | `public/`, `src/`, `bin/` | https://adminnew.pikope.com |
+| Landing | `site-pikope.com/` | https://pikope.com |
+| Android app | `app/` | Play Store / direct APK |
+| APK backup | `releases/apk/` | Git history only |
 
-1. **Upload** this repo into `public_html/pikope/` (File Manager, Git deploy, or download ZIP from GitHub → extract).
-2. **Document root** (hPanel → Subdomains → `pikope`):
+## Deploy
 
-   ```text
-   .../public_html/pikope/public
-   ```
+- **Admin/API:** Hostinger Git → `public_html/adminnew` (docroot `.../adminnew/public`)
+- **Landing:** GitHub Actions FTP on push — see `deploy/LANDING-AUTO-SETUP.txt`
+- **Full checklist:** `deploy/MONOREPO-HOSTINGER.txt`
 
-3. **Environment:** copy `.env.example` → `.env` in the `pikope` folder (next to `public/`, not inside it). Set `DB_*`, `APP_URL`, `ADMIN_USER`, `ADMIN_PASS`. Use `APP_DEBUG=0` in production.
-4. **Database:** phpMyAdmin → import `sql/schema.sql`, or SSH: `php bin/migrate.php`
-5. **Test:** `https://adminnew.pikope.com/health` → JSON `ok`
-6. **Admin:** `https://adminnew.pikope.com/admin` (HTTP Basic)
-7. **Cron (every 5 min):** `php .../pikope/bin/cleanup.php`
-
-See `deploy/HOSTINGER-PIKOPE.txt` for the full checklist.
-
-**Auto deploy:** push to `main` runs GitHub Actions FTP (landing + backend). One-time setup: `deploy/HOSTINGER-GIT-DEPLOY.txt`.
+After push: `php bin/migrate.php` on server when schema changes.
 
 ## APK
 
-Release builds need `android/key.properties` (see `duelx/android/key.properties.example` in the Flutter repo).
-
-```bash
-flutter build apk --release --dart-define=API_BASE_URL=https://adminnew.pikope.com
+```powershell
+cd app
+flutter build apk --release --dart-define-from-file=.env
+cd ..
+.\scripts\publish-apk.ps1
+git add releases/apk && git commit -m "APK 1.0.x" && git push
 ```
+
+Signing: `app/android/key.properties` (never commit).
 
 ## Requirements
 
-- PHP **8.1+** (64-bit), extensions: `pdo_mysql`, `json`, `mbstring`, `fileinfo`
-- MySQL 8+
-- Writable: `public/uploads/avatars`
-
-Check server: `php bin/doctor.php`
-
-Wallet audit (read-only): `php bin/reconcile_wallet.php` — exit 1 if balance ≠ ledger.
-
-Push notifications: set `FCM_SERVER_KEY` in `.env` (Firebase console → Cloud Messaging).
-Replace the placeholder `google-services.json` in the Flutter app with your Firebase Android app file (`com.pikope.piko`).
-
-## Layout
-
-```text
-pikope/
-  .env              ← secrets (not in git)
-  public/           ← web document root
-  src/              ← API + Admin.php
-  sql/
-  bin/
-  deploy/
-```
+PHP 8.1+, MySQL 8+, Flutter 3.12+ for `app/`.

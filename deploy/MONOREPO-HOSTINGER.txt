@@ -1,0 +1,61 @@
+PikoPe — one Git repo (app + admin + landing + APK)
+====================================================
+
+GitHub: https://github.com/battleasiav2/pikope  branch: main
+
+REPO LAYOUT
+-----------
+  public/  src/  bin/  sql/     → API + admin (adminnew.pikope.com)
+  site-pikope.com/               → landing (pikope.com)
+  app/                           → Flutter Android source
+  releases/apk/                  → APK backups in Git
+
+AUTO DEPLOY (after setup)
+-------------------------
+  git push origin main
+    → Hostinger Git     → public_html/adminnew  (admin + API)
+    → GitHub Actions    → FTP → pikope.com public_html (landing only)
+
+HOSTINGER — reconnect Git (admin)
+---------------------------------
+1. hPanel → Websites → pikope.com → Advanced → Git
+2. Repository: battleasiav2/pikope  Branch: main
+3. Directory: public_html/adminnew
+4. Auto-deployment: ON
+5. Subdomain adminnew → Document root MUST be:
+     public_html/adminnew/public
+
+6. Server .env (once, not in git):
+     cp .env.example .env   → edit DB, ADMIN_*, APP_URL
+7. After each deploy with DB changes:
+     cd public_html/adminnew && php bin/migrate.php
+
+GITHUB — landing auto (FTP)
+---------------------------
+1. Add workflow file on GitHub (if missing):
+     .github/workflows/hostinger-deploy.yml
+   See deploy/LANDING-AUTO-SETUP.txt
+
+2. Secrets: FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_LANDING_DIR
+   (path to pikope.com public_html)
+
+3. Do NOT set FTP_BACKEND_AUTO (Hostinger Git handles backend).
+
+CURSOR WORKFLOW
+---------------
+1. Edit app/, site-pikope.com/, or backend (src/, public/, …)
+2. New APK: build in app/, run scripts/publish-apk.ps1, commit releases/apk/
+3. git add -A && git commit -m "..." && git push origin main
+4. Wait: Hostinger deploy + Actions landing job (Actions tab)
+
+OPTIONAL: keep editing duelx folder locally
+-------------------------------------------
+Run from duelx after changes:
+  robocopy duelx\app-content to pikope-github\app  (or use sync script)
+Primary backup repo is battleasiav2/pikope.
+
+TEST
+----
+  https://adminnew.pikope.com/health
+  https://adminnew.pikope.com/admin
+  https://pikope.com

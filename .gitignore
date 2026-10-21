@@ -1,7 +1,39 @@
+# Backend secrets
 .env
 .env.*
 !.env.example
-dist/
+.env.hostinger
+
+# Logs / dist
 *.log
+dist/
 public/uploads/avatars/*
 !public/uploads/avatars/.gitkeep
+
+# Flutter app (app/)
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.packages
+app/.pub-cache/
+app/.pub/
+app/android/.gradle/
+app/android/app/build/
+app/android/key.properties
+app/android/local.properties
+app/**/*.keystore
+app/**/*.jks
+app/.env
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# APK elsewhere — only releases/apk/*.apk are tracked
+*.apk
+*.aab
+!releases/apk/*.apk
