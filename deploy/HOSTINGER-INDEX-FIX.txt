@@ -1,0 +1,21 @@
+কেন “আগের” landing দেখাচ্ছে (replit bar / button / no APK)?
+→ Hostinger public_html/index.html এ আপনি CHAT থেকে পুরনো HTML paste করেছেন।
+→ Git/Cursor-এ নতুন index.html আছে (একই ডিজাইন, শুধু fix + admin APK)।
+
+ঠিক index (একই Play Store design):
+  E:\dulex\DuelX-source-2026-10-17\pikope-github\index.html
+
+Hostinger-এ করুন (একবার):
+1) public_html/index.html DELETE → repo-র index.html UPLOAD (paste নয়, পুরো ফাইল)
+2) public_html/index.php → repo index.php (optional; serves same index.html)
+3) public_html/assets/ → config.js, landing.js, app_icon.jpg (zip থেকে)
+
+ZIP: scripts\build-landing-zip.ps1 → Downloads\pikope-server-deploy.zip
+     extract into public_html (index.html + index.php + assets/)
+
+Verify live:
+  View source → search: pikope-landing-v2
+  search: landing.js (must exist, not only setLanguage script)
+  NO text: pikope.replit.dev, NO "Top App Bar" header
+
+APK: adminnew → Landing → Upload APK (landing.js auto-links download button)

@@ -29,7 +29,7 @@ PikoPe full project (Hostinger / Git backup)
 ============================================
 
 LANDING (pikope.com) — same files as pikope-server-deploy.zip
-  public_html: index.html + assets/  (styles.css, hero-bg.jpg, app_icon.jpg)
+  public_html: index.html + index.php + assets/  (landing.js, config.js, app_icon.jpg)
   Or use entire archive as public_html after Git deploy.
 
 ADMIN + API (adminnew.pikope.com)

@@ -2393,7 +2393,7 @@ CSS;
         self::begin('Landing page (pikope.com)', 'landing');
         self::pageLead(
             '<b>pikope.com</b> loads <code>/landing/public</code> (default language: Bangla). '
-            . 'Upload APK, hero background, screenshots, and live support links (Facebook / Telegram) here.'
+            . 'Upload APK, promo/hero image, screenshots (game grid), and live support links (Facebook / Telegram) here.'
         );
 
         echo '<section class="section"><div class="card"><form method="post" action="', self::e($base), '/admin/landing/save">', self::csrfField($csrf),
@@ -2442,7 +2442,7 @@ CSS;
         }
         echo '</div></section>';
 
-        echo '<section class="section"><h2>Hero background</h2><div class="card"><p class="hint">Wide JPG/PNG/WebP, max 5 MB. Replaces default pool image on site.</p>';
+        echo '<section class="section"><h2>Promo image (Pico Coin section)</h2><div class="card"><p class="hint">Wide JPG/PNG/WebP, max 5 MB. Shown in the Pico Coin block on pikope.com (overrides screenshot #5).</p>';
         if ((string) ($c['heroImage'] ?? '') !== '') {
             $hUrl = $base . '/' . ltrim((string) $c['heroImage'], '/');
             echo '<img src="', self::e($hUrl), '" alt="" style="max-width:100%;max-height:200px;border-radius:8px;margin-bottom:12px">';
@@ -2456,7 +2456,7 @@ CSS;
         }
         echo '</div></section>';
 
-        echo '<section class="section"><h2>Screenshots</h2><p class="hint">Portrait JPG/PNG/WebP, max 3 MB. Up to ', LandingPage::MAX_SHOTS, ' images.</p>',
+        echo '<section class="section"><h2>Screenshots</h2><p class="hint">Portrait JPG/PNG/WebP, max 3 MB. Up to ', LandingPage::MAX_SHOTS, ' images. Order on pikope.com: #1–#4 = Ludo, Pool, Carrom, Lobby grid; #5 = promo fallback if no hero upload.</p>',
             '<div class="card"><form method="post" action="', self::e($base), '/admin/landing/upload" enctype="multipart/form-data">', self::csrfField($csrf),
             '<label>Add screenshot<input type="file" name="screenshot" accept="image/jpeg,image/png,image/webp" required></label>',
             '<button>Upload</button></form></div><div class="grid" style="margin-top:16px">';

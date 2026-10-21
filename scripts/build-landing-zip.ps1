@@ -5,6 +5,7 @@ $out = Join-Path $env:USERPROFILE "Downloads\pikope-server-deploy.zip"
 if (Test-Path $out) { Remove-Item $out -Force }
 $items = @(
   (Join-Path $RepoRoot "index.html"),
+  (Join-Path $RepoRoot "index.php"),
   (Join-Path $RepoRoot "assets")
 )
 Compress-Archive -Path $items -DestinationPath $out -CompressionLevel Optimal

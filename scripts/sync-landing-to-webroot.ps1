@@ -1,4 +1,4 @@
-# Copy site-pikope.com → repo web root (same layout as landing deploy zip).
+# Copy site-pikope.com → repo web root (Tailwind Play Store index + landing.js).
 $RepoRoot = Split-Path $PSScriptRoot -Parent
 $src = Join-Path $RepoRoot "site-pikope.com"
 $index = Join-Path $RepoRoot "index.html"

@@ -1,7 +1,7 @@
 # pikope.com docroot = public_html (index.html + assets/ = landing zip layout).
 # adminnew docroot = public_html/public
 Options -Indexes
-DirectoryIndex index.html
+DirectoryIndex index.php index.html
 
 RewriteEngine On
 RewriteBase /

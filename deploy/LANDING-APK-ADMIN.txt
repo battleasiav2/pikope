@@ -1,0 +1,27 @@
+pikope.com — APK শুধু adminnew থেকে (landing design index.php / index.html)
+
+1) Hostinger public_html/
+   - index.php   → repo index.php (serves index.html)
+   - index.html  → Play Store Tailwind design (with landing.js at bottom)
+   - assets/config.js
+   - assets/landing.js
+   - assets/app_icon.jpg
+
+2) adminnew.pikope.com → Admin → Landing
+   - Upload APK (.apk) → served as https://adminnew.pikope.com/uploads/landing/pikope-latest.apk
+   - Save → apkUrl in JSON: GET /landing/public
+
+3) pikope.com download button
+   - landing.js calls adminnew /landing/public (CORS allowed)
+   - If apkUrl set → green button links to admin-hosted APK
+   - If empty → “APK not available yet” hint
+
+4) If you keep YOUR OWN index.php (full HTML inside PHP):
+   Before </body> add exactly:
+     <script src="/assets/config.js"></script>
+     <script src="/assets/landing.js"></script>
+   Change download control to:
+     <a id="download-btn" href="#" class="... same classes ...">...</a>
+     <p id="download-hint" class="...">APK not available...</p>
+
+5) Redeploy Git or upload files; Ctrl+F5 on pikope.com
