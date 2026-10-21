@@ -104,7 +104,7 @@
     const shots = (urls || []).filter(Boolean);
     if (shots.length === 0) {
       strip.innerHTML =
-        '<div class="shot-placeholder card-panel"><img src="assets/img/pikope_logo.png" alt="" width="72"><p data-i18n="phScreens"></p></div>';
+        '<div class="shot-placeholder card-panel"><img src="assets/pikope_logo.png" alt="" width="72"><p data-i18n="phScreens"></p></div>';
       const p = strip.querySelector('[data-i18n="phScreens"]');
       if (p) p.textContent = t('phScreens');
       return;

@@ -28,8 +28,8 @@ $readme = @"
 PikoPe full project (Hostinger / Git backup)
 ============================================
 
-LANDING (pikope.com)
-  Upload to public_html: index.html + assets/  (same as pikope-server-deploy.zip)
+LANDING (pikope.com) — same files as pikope-server-deploy.zip
+  public_html: index.html + assets/  (styles.css, hero-bg.jpg, app_icon.jpg)
   Or use entire archive as public_html after Git deploy.
 
 ADMIN + API (adminnew.pikope.com)
