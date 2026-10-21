@@ -106,6 +106,10 @@ final class Admin
                     self::clearLandingApk();
                 case '/admin/landing/hero-clear':
                     self::clearLandingHero();
+                case '/admin/landing/icon':
+                    self::uploadLandingIcon();
+                case '/admin/landing/icon-clear':
+                    self::clearLandingIcon();
             }
             throw ApiError::notFound('No such endpoint');
         }
@@ -2349,6 +2353,26 @@ CSS;
         self::back('/admin/landing', 'Hero background removed.');
     }
 
+    private static function uploadLandingIcon(): never
+    {
+        try {
+            if (!isset($_FILES['icon']) || !is_array($_FILES['icon'])) {
+                throw ApiError::badRequest('Choose an app icon image.', 'upload');
+            }
+            $rel = LandingPage::storeAppIcon($_FILES['icon']);
+            LandingPage::save(['appIcon' => $rel]);
+        } catch (ApiError $e) {
+            self::back('/admin/landing', null, $e->getMessage());
+        }
+        self::back('/admin/landing', 'App icon uploaded for pikope.com.');
+    }
+
+    private static function clearLandingIcon(): never
+    {
+        LandingPage::clearAppIcon();
+        self::back('/admin/landing', 'App icon removed (site uses default assets/app_icon).');
+    }
+
     private static function uploadLandingShot(): never
     {
         $c = LandingPage::config();
@@ -2393,7 +2417,7 @@ CSS;
         self::begin('Landing page (pikope.com)', 'landing');
         self::pageLead(
             '<b>pikope.com</b> loads <code>/landing/public</code> (default language: Bangla). '
-            . 'Upload APK, promo/hero image, screenshots (game grid), and live support links (Facebook / Telegram) here.'
+            . 'Upload APK, app icon (same as APK), promo/hero image, screenshots (game grid), and live support links (Facebook / Telegram) here.'
         );
 
         echo '<section class="section"><div class="card"><form method="post" action="', self::e($base), '/admin/landing/save">', self::csrfField($csrf),
@@ -2439,6 +2463,20 @@ CSS;
         if ((string) ($c['apkFile'] ?? '') !== '') {
             echo '<form method="post" action="', self::e($base), '/admin/landing/apk-clear" style="margin-top:12px">', self::csrfField($csrf),
                 '<button type="submit">Remove uploaded APK</button></form>';
+        }
+        echo '</div></section>';
+
+        echo '<section class="section"><h2>App icon (pikope.com header)</h2><div class="card"><p class="hint">Square PNG/JPG/WebP, max 3 MB — use the same icon as your APK / Play Store (e.g. export from <code>assets/icon/app_icon.png</code>).</p>';
+        if ((string) ($c['appIcon'] ?? '') !== '') {
+            $iUrl = $base . '/' . ltrim((string) $c['appIcon'], '/');
+            echo '<img src="', self::e($iUrl), '" alt="" style="width:96px;height:96px;border-radius:16px;margin-bottom:12px;object-fit:cover">';
+        }
+        echo '<form method="post" action="', self::e($base), '/admin/landing/icon" enctype="multipart/form-data">', self::csrfField($csrf),
+            '<label>App icon<input type="file" name="icon" accept="image/jpeg,image/png,image/webp" required></label>',
+            '<button>Upload icon</button></form>';
+        if ((string) ($c['appIcon'] ?? '') !== '') {
+            echo '<form method="post" action="', self::e($base), '/admin/landing/icon-clear" style="margin-top:12px">', self::csrfField($csrf),
+                '<button type="submit">Remove icon</button></form>';
         }
         echo '</div></section>';
 

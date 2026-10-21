@@ -45,6 +45,14 @@
     if (pico && urls && urls[4] && !pico.dataset.heroSet) pico.src = urls[4];
   }
 
+  function applyAppIcon(url) {
+    if (!url) return;
+    const icon = $('landing-app-icon');
+    if (icon) icon.src = url;
+    const fav = document.querySelector('link[rel="icon"]');
+    if (fav) fav.href = url;
+  }
+
   function applyStats(stats) {
     if (!stats) return;
     const rating = $('stat-rating-big');
@@ -62,6 +70,7 @@
       const lang = cfg.defaultLang === 'en' ? 'en' : 'bn';
       const loc = (data.locales && data.locales[lang]) || {};
       setDownload(data.apkUrl || cfg.fallbackApk || '', loc.apkLabel, data.locales?.en?.apkLabel);
+      applyAppIcon(data.appIconUrl || '');
       applyScreenshots(data.screenshots || []);
       if (data.heroImageUrl) {
         const pico = $('pico-promo-img');

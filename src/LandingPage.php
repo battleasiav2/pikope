@@ -10,6 +10,7 @@ final class LandingPage
     private const UPLOAD_DIR = 'uploads/landing';
     private const APK_NAME = 'pikope-latest.apk';
     private const HERO_NAME = 'hero-bg';
+    private const ICON_NAME = 'app-icon';
 
     /** @var array<string,array<string,mixed>> */
     public const LOCALE_DEFAULTS = [
@@ -43,6 +44,7 @@ final class LandingPage
         'apkUrl' => '',
         'apkFile' => '',
         'heroImage' => '',
+        'appIcon' => '',
         'screenshots' => [],
         'statRating' => '4.8',
         'statReviews' => '12K+',
@@ -105,6 +107,7 @@ final class LandingPage
         $apk = self::resolveApkUrl($c, $base);
         $shots = self::publicUrls($c['screenshots'], $base);
         $hero = self::publicUrl((string) $c['heroImage'], $base);
+        $icon = self::publicUrl((string) $c['appIcon'], $base);
         $defaultLang = (string) $c['defaultLang'];
         if (!isset(self::LOCALE_DEFAULTS[$defaultLang])) {
             $defaultLang = 'bn';
@@ -115,6 +118,7 @@ final class LandingPage
             'defaultLang' => $defaultLang,
             'apkUrl' => $apk,
             'heroImageUrl' => $hero,
+            'appIconUrl' => $icon,
             'screenshots' => $shots,
             'locales' => [
                 'bn' => self::localeOut($c['bn']),
@@ -147,6 +151,16 @@ final class LandingPage
         }
         $rel = self::storeImage($file, self::HERO_NAME);
         return $rel;
+    }
+
+    /** @param array<string,mixed> $file from $_FILES — same artwork as Play Store / APK icon (square). */
+    public static function storeAppIcon(array $file): string
+    {
+        $c = self::config();
+        if ((string) $c['appIcon'] !== '') {
+            self::removeStoredFile((string) $c['appIcon']);
+        }
+        return self::storeImage($file, self::ICON_NAME);
     }
 
     /** @param array<string,mixed> $file from $_FILES */
@@ -211,6 +225,15 @@ final class LandingPage
         self::save(['heroImage' => '']);
     }
 
+    public static function clearAppIcon(): void
+    {
+        $c = self::config();
+        if ((string) $c['appIcon'] !== '') {
+            self::removeStoredFile((string) $c['appIcon']);
+        }
+        self::save(['appIcon' => '']);
+    }
+
     /** @param array<string,mixed> $file @param non-empty-string $prefix */
     private static function storeImage(array $file, string $prefix): string
     {
@@ -233,9 +256,12 @@ final class LandingPage
         if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
             throw ApiError::badRequest('Could not create upload folder.', 'upload');
         }
-        $name = $prefix === 'shot'
-            ? bin2hex(random_bytes(8)) . '.' . $ext
-            : self::HERO_NAME . '.' . $ext;
+        $name = match ($prefix) {
+            'shot' => bin2hex(random_bytes(8)) . '.' . $ext,
+            self::HERO_NAME => self::HERO_NAME . '.' . $ext,
+            self::ICON_NAME => self::ICON_NAME . '.' . $ext,
+            default => bin2hex(random_bytes(8)) . '.' . $ext,
+        };
         if (!move_uploaded_file((string) $file['tmp_name'], $dir . '/' . $name)) {
             throw ApiError::badRequest('Could not save image.', 'upload');
         }
@@ -361,12 +387,18 @@ final class LandingPage
             throw ApiError::badRequest('Invalid hero image path.', 'bad_path');
         }
 
+        $appIcon = trim((string) ($raw['appIcon'] ?? ''));
+        if ($appIcon !== '' && !str_starts_with($appIcon, self::UPLOAD_DIR . '/')) {
+            throw ApiError::badRequest('Invalid app icon path.', 'bad_path');
+        }
+
         return [
             'enabled' => (bool) ($raw['enabled'] ?? true),
             'defaultLang' => $defaultLang,
             'apkUrl' => $apk,
             'apkFile' => $apkFile,
             'heroImage' => $hero,
+            'appIcon' => $appIcon,
             'screenshots' => $shots,
             'statRating' => mb_substr(trim((string) ($raw['statRating'] ?? self::DEFAULTS['statRating'])), 0, 8),
             'statReviews' => mb_substr(trim((string) ($raw['statReviews'] ?? self::DEFAULTS['statReviews'])), 0, 16),
