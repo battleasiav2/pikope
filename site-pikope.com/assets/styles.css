@@ -27,7 +27,7 @@ body {
   position: fixed;
   inset: -2%;
   z-index: -2;
-  background: url("hero-landing.jpg") center / cover no-repeat;
+  background: url("img/hero-landing.jpg") center / cover no-repeat;
   animation: kenburns 30s ease-in-out infinite alternate;
 }
 .bg-scrim {

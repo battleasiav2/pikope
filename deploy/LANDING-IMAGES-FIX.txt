@@ -1,0 +1,14 @@
+If pikope.com landing looks wrong (no hero / wrong icon):
+
+1) hPanel → File Manager → public_html/assets
+   DELETE old: hero-bg.jpg, hero-landing.jpg, app_icon.jpg, app-icon-landing.jpg
+   (Git redeploy will not always overwrite large JPGs on Hostinger.)
+
+2) Git → Redeploy (or wait for auto deploy).
+
+3) New images live under: public_html/assets/img/
+   hero-landing.jpg (367065 bytes), app-icon-landing.jpg (121484 bytes)
+
+4) Hard refresh: Ctrl+F5 on https://pikope.com
+
+Manual fallback: extract pikope-server-deploy.zip → upload assets/img/* into public_html/assets/img/
