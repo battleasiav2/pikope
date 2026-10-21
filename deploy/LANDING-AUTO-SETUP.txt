@@ -1,0 +1,52 @@
+pikope.com landing — Git push → auto upload (FTP)
+=================================================
+
+Backend already: Hostinger Git → public_html/adminnew (Cursor push = auto).
+This workflow only uploads site-pikope.com/ → pikope.com public_html.
+
+STEP 1 — Add workflow on GitHub (if not in repo yet)
+----------------------------------------------------
+1. Open https://github.com/battleasiav2/pikope
+2. Add file → name: .github/workflows/hostinger-deploy.yml
+3. Copy contents from your PC:
+   E:\dulex\DuelX-source-2026-10-17\pikope-github\.github\workflows\hostinger-deploy.yml
+4. Commit directly to main
+
+   OR from PC (needs workflow scope):
+   gh auth refresh -h github.com -s workflow
+   cd pikope-github && git add .github && git commit -m "Add landing FTP deploy" && git push
+
+STEP 2 — GitHub Secrets (repo → Settings → Secrets and variables → Actions)
+---------------------------------------------------------------------------
+FTP_SERVER        Hostinger FTP hostname (hPanel → Files → FTP Accounts)
+FTP_USERNAME
+FTP_PASSWORD
+FTP_LANDING_DIR   Folder for pikope.com site root, examples:
+                    /domains/pikope.com/public_html
+                    /public_html
+
+Find path: File Manager → open public_html for pikope.com → note full path in UI.
+
+STEP 3 — Optional variables (Settings → Variables)
+----------------------------------------------------
+FTP_LANDING_AUTO     (default on) set false to pause landing FTP only
+FTP_DEPLOY_ENABLED   set false to pause entire workflow
+FTP_DRY_RUN          true = test run, no files changed on server
+FTP_BACKEND_AUTO     true only if you ALSO want FTP backend (not needed with Hostinger Git)
+
+STEP 4 — Test
+-------------
+1. Actions tab → Deploy Hostinger → Run workflow (workflow_dispatch)
+   OR push any change under site-pikope.com/
+2. Open https://pikope.com — hard refresh (Ctrl+F5)
+3. If fail "550": wrong FTP_LANDING_DIR — fix secret and re-run
+
+DAILY USE (Cursor)
+------------------
+1. Edit site-pikope.com in duelx or pikope-github
+2. git push origin main
+3. Hostinger Git updates adminnew (API)
+4. GitHub Action updates pikope.com (landing)
+5. Backend DB changes: SSH → php bin/migrate.php
+
+DO NOT commit .env or FTP passwords to git.
