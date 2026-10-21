@@ -1,15 +1,11 @@
-# Main domain docroot is often public_html (repo root). Serve landing from site-pikope.com/.
-# adminnew subdomain docroot must stay public_html/public (or adminnew/public).
+# pikope.com docroot = public_html (index.html + assets/ = landing zip layout).
+# adminnew docroot = public_html/public
 Options -Indexes
+DirectoryIndex index.html
+
 RewriteEngine On
 RewriteBase /
 
-RewriteRule ^$ site-pikope.com/index.html [L]
-
-# Block web access to backend/app source on the main domain.
-RewriteRule ^(public|src|bin|app|adminnew|sql|deploy|releases|scripts|\.git)(/|$) - [F,L]
+# Block backend/app source on the main domain.
+RewriteRule ^(public|src|bin|app|adminnew|site-pikope.com|sql|deploy|releases|scripts|\.git)(/|$) - [F,L]
 RewriteRule \.(env|md|gitignore|example)$ - [F,L,NC]
-
-RewriteCond %{DOCUMENT_ROOT}/site-pikope.com/$1 -f [OR]
-RewriteCond %{DOCUMENT_ROOT}/site-pikope.com/$1 -d
-RewriteRule ^(.+)$ site-pikope.com/$1 [L]

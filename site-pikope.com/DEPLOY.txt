@@ -1,7 +1,9 @@
 PikoPe — MAIN DOMAIN: https://pikope.com (Play Store style landing)
 ================================================================
 
-Upload ONLY this folder to pikope.com document root (public_html/).
+Source folder for landing. Git also copies to repo root (index.html + assets/) via scripts/sync-landing-to-webroot.ps1 — same as pikope-landing-deploy.zip.
+
+Upload ONLY index.html + assets/ to pikope.com document root (public_html/), or use Git deploy to public_html.
 API + admin stay on https://adminnew.pikope.com (separate PHP deploy).
 
 WHAT THIS SITE DOES
