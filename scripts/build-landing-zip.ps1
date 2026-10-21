@@ -8,4 +8,4 @@ $items = @(
   (Join-Path $RepoRoot "assets")
 )
 Compress-Archive -Path $items -DestinationPath $out -CompressionLevel Optimal
-Write-Host "Created $out — extract into public_html (same as Git deploy landing files)"
+Write-Host "Created $out - extract into public_html (same as Git deploy landing files)"
