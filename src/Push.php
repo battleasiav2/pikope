@@ -114,8 +114,13 @@ final class Push
         }
         if ($kind === 'challenge') {
             Auth::ensureChallengesEnabledColumn();
-            $row = Db::one('SELECT challenges_enabled FROM users WHERE id = ?', [$userId]);
-            if ($row !== null && !(bool) ($row['challenges_enabled'] ?? 1)) {
+            Auth::ensureChallengeGameColumns();
+            $row = Db::one(
+                'SELECT challenges_enabled, challenge_pool, challenge_ludo, challenge_carrom FROM users WHERE id = ?',
+                [$userId]
+            );
+            $game = (string) ($data['game'] ?? '');
+            if ($row === null || !ChallengeService::userAcceptsGame($row, $game !== '' ? $game : 'billiard')) {
                 return;
             }
         }

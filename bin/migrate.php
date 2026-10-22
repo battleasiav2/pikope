@@ -26,6 +26,9 @@ $columns = [
         'phone' => 'CHAR(13) NULL',
         'name_changed_at' => 'DATETIME NULL',
         'challenges_enabled' => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'challenge_pool' => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'challenge_ludo' => 'TINYINT(1) NOT NULL DEFAULT 1',
+        'challenge_carrom' => 'TINYINT(1) NOT NULL DEFAULT 1',
     ],
     'room_players' => [
         'joined_at' => 'DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP',
@@ -70,7 +73,7 @@ $enumFixes = [
     'rooms' => ["ENUM('poker','eight','nine','ten','billiard','ludo2','ludo4','carrom') NOT NULL", 'carrom'],
     'games' => ["ENUM('poker','eight','nine','ten','ludo2','ludo4','carrom') NOT NULL", 'carrom'],
     'match_results' => ["ENUM('poker','eight','nine','ten','ludo2','ludo4','carrom') NOT NULL", 'carrom'],
-    'challenges' => ["ENUM('eight','nine','ten','billiard','ludo2','carrom') NOT NULL", 'carrom'],
+    'challenges' => ["ENUM('eight','nine','ten','billiard','ludo2','ludo4','carrom') NOT NULL", 'carrom'],
 ];
 foreach ($enumFixes as $table => [$def, $needle]) {
     $type = $pdo->query("SHOW COLUMNS FROM `$table` LIKE 'game'")->fetch(PDO::FETCH_ASSOC)['Type'];

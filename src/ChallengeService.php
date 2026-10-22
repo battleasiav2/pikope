@@ -10,8 +10,52 @@ namespace App;
 final class ChallengeService
 {
     /** Games a challenge may be for (all 1 v 1). */
-    public const GAMES = ['billiard', 'eight', 'nine', 'ten', 'ludo2', 'carrom'];
+    public const GAMES = ['billiard', 'eight', 'nine', 'ten', 'ludo2', 'ludo4', 'carrom'];
     private const TTL_SECONDS = 60;
+    private const OPEN_INVITE_SECONDS = 120;
+
+    /** pool | ludo | carrom — settings and accept checks use these families. */
+    public static function gameFamily(string $game): ?string
+    {
+        if (str_starts_with($game, 'ludo')) {
+            return 'ludo';
+        }
+        if ($game === 'carrom') {
+            return 'carrom';
+        }
+        if (in_array($game, ['billiard', 'eight', 'nine', 'ten', 'poker'], true)) {
+            return 'pool';
+        }
+        return null;
+    }
+
+    /** Whether this user accepts an incoming invite for [game]. */
+    public static function userAcceptsGame(array $u, string $game): bool
+    {
+        Auth::ensureChallengesEnabledColumn();
+        Auth::ensureChallengeGameColumns();
+        if (!(bool) ($u['challenges_enabled'] ?? 1)) {
+            return false;
+        }
+        $family = self::gameFamily($game);
+        if ($family === null) {
+            return false;
+        }
+        $col = match ($family) {
+            'pool' => 'challenge_pool',
+            'ludo' => 'challenge_ludo',
+            'carrom' => 'challenge_carrom',
+        };
+        return (bool) ($u[$col] ?? 1);
+    }
+
+    /** @param array<string,mixed> $u */
+    public static function userAcceptsAny(array $u): bool
+    {
+        return self::userAcceptsGame($u, 'billiard')
+            || self::userAcceptsGame($u, 'ludo2')
+            || self::userAcceptsGame($u, 'carrom');
+    }
 
     /** Online = used a token in the last 3 minutes. */
     private const ONLINE_SQL = "SELECT user_id, MAX(last_used_at) AS la FROM auth_tokens GROUP BY user_id";
@@ -31,6 +75,7 @@ final class ChallengeService
         Auth::ensureChallengesEnabledColumn();
         $rows = Db::all(
             "SELECT u.id, u.display_name, u.avatar, u.coins, u.wins, u.xp, u.challenges_enabled,
+                    u.challenge_pool, u.challenge_ludo, u.challenge_carrom,
                     EXISTS (SELECT 1 FROM game_players gp JOIN games g ON g.id = gp.game_id
                             WHERE gp.user_id = u.id AND g.status = 'active') AS busy,
                     (SELECT g.game FROM game_players gp JOIN games g ON g.id = gp.game_id
@@ -50,7 +95,7 @@ final class ChallengeService
                 'level' => Economy::levelOf((int) $r['xp'])['level'], 'rank' => Economy::rankOf((int) $r['wins'])['name'],
                 'busy' => $busy,
                 'game' => $game,
-                'acceptsChallenges' => (bool) ($r['challenges_enabled'] ?? 1),
+                'acceptsChallenges' => self::userAcceptsAny($r),
             ];
         }, $rows);
     }
@@ -64,13 +109,20 @@ final class ChallengeService
         if (!in_array($game, self::GAMES, true)) {
             throw ApiError::badRequest('That game cannot be challenged', 'bad_game');
         }
+        if ($level === null) {
+            throw ApiError::badRequest('Pick a stake level', 'bad_level');
+        }
         Auth::ensureChallengesEnabledColumn();
-        $target = Db::one('SELECT id, display_name, avatar, challenges_enabled FROM users WHERE id = ? AND banned = 0', [$toUserId]);
+        $target = Db::one(
+            'SELECT id, display_name, avatar, challenges_enabled, challenge_pool, challenge_ludo, challenge_carrom
+             FROM users WHERE id = ? AND banned = 0',
+            [$toUserId]
+        );
         if ($target === null) {
             throw ApiError::notFound('No such player');
         }
-        if (!(bool) ($target['challenges_enabled'] ?? 1)) {
-            throw ApiError::conflict('That player is not accepting challenges', 'challenges_off');
+        if (!self::userAcceptsGame($target, $game)) {
+            throw ApiError::conflict('That player is not accepting challenges for this game', 'challenges_off');
         }
         RateLimit::hit('challenge:' . $uid, 30, 300);
         $stakeMode = $game === 'poker' ? 'poker' : 'billiard';
@@ -102,11 +154,93 @@ final class ChallengeService
                 'challenge',
                 'New challenge',
                 ($user['display_name'] ?? 'A player') . ' invited you to a match.',
-                [],
+                ['game' => $game],
                 'challenge:' . $id
             );
             return self::view($id);
         });
+    }
+
+    /** When someone opens a public table, notify every eligible online player. */
+    public static function broadcastOpenMatch(array $user, array $roomView): void
+    {
+        $uid = (int) $user['id'];
+        $roomId = (int) ($roomView['id'] ?? 0);
+        if ($roomId < 1 || ($roomView['status'] ?? '') !== 'waiting' || !empty($roomView['isPrivate'])) {
+            return;
+        }
+        $game = (string) ($roomView['game'] ?? '');
+        if (!in_array($game, self::GAMES, true) && $game !== 'poker') {
+            return;
+        }
+        if ($game === 'poker') {
+            return;
+        }
+        RateLimit::hit('open-ch:' . $uid, 12, 60);
+        self::cancelPendingForRoom($roomId);
+        $level = isset($roomView['level']) && $roomView['level'] !== null ? (int) $roomView['level'] : null;
+        $stake = (int) ($roomView['stake'] ?? 0);
+        $fee = (int) ($roomView['fee'] ?? 0);
+        $name = (string) ($user['display_name'] ?? 'A player');
+        $inRoom = Db::all('SELECT user_id FROM room_players WHERE room_id = ?', [$roomId]);
+        $skip = array_map(static fn (array $r): int => (int) $r['user_id'], $inRoom);
+        $skip[] = $uid;
+        $rows = Db::all(
+            "SELECT u.id, u.challenges_enabled, u.challenge_pool, u.challenge_ludo, u.challenge_carrom
+             FROM users u JOIN (" . self::ONLINE_SQL . ") t ON t.user_id = u.id
+             WHERE t.la > DATE_SUB(NOW(), INTERVAL 3 MINUTE) AND u.banned = 0
+             ORDER BY t.la DESC LIMIT 80",
+            []
+        );
+        foreach ($rows as $row) {
+            $tid = (int) $row['id'];
+            if (in_array($tid, $skip, true)) {
+                continue;
+            }
+            if (self::busy($tid) || !self::userAcceptsGame($row, $game)) {
+                continue;
+            }
+            Db::run(
+                'INSERT INTO challenges (from_user, to_user, game, level, stake, fee, room_id, expires_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+                [$uid, $tid, $game, $level, $stake, $fee, $roomId, self::OPEN_INVITE_SECONDS]
+            );
+            $id = Db::lastId();
+            Push::notifyUser(
+                $tid,
+                'challenge',
+                'Open table',
+                $name . ' is waiting for a ' . strtoupper($game) . ' match.',
+                ['game' => $game, 'roomId' => (string) $roomId],
+                'challenge:' . $id
+            );
+        }
+    }
+
+    /** @var array<int,int> room id => last broadcast unix time */
+    private static array $openBroadcastAt = [];
+
+    /** Host still on matchmaking: refresh invites without spamming. */
+    public static function maybeRebroadcastOpenMatch(array $user, array $roomView): void
+    {
+        $roomId = (int) ($roomView['id'] ?? 0);
+        if ($roomId < 1 || (int) ($roomView['hostId'] ?? 0) !== (int) $user['id']) {
+            return;
+        }
+        $now = time();
+        if ((self::$openBroadcastAt[$roomId] ?? 0) + 45 > $now) {
+            return;
+        }
+        self::$openBroadcastAt[$roomId] = $now;
+        self::broadcastOpenMatch($user, $roomView);
+    }
+
+    public static function cancelPendingForRoom(int $roomId): void
+    {
+        if ($roomId < 1) {
+            return;
+        }
+        Db::run("UPDATE challenges SET status = 'cancelled' WHERE room_id = ? AND status = 'pending'", [$roomId]);
     }
 
     /** Pending invites addressed to me, and the live state of ones I sent. */
@@ -156,13 +290,21 @@ final class ChallengeService
         if ($claimed !== 1) {
             throw ApiError::conflict('That challenge is no longer open', 'expired');
         }
+        $openRoomId = $c['room_id'] === null ? null : (int) $c['room_id'];
         try {
-            $room = RoomService::matchUp($host, $user, $c['game'], $c['level'] === null ? null : (int) $c['level']);
+            if ($openRoomId !== null && $openRoomId > 0) {
+                $room = RoomService::joinOpenChallenge($openRoomId, $user);
+            } else {
+                $room = RoomService::matchUp($host, $user, $c['game'], $c['level'] === null ? null : (int) $c['level']);
+            }
         } catch (\Throwable $e) {
             Db::run("UPDATE challenges SET status = 'pending' WHERE id = ? AND status = 'accepted' AND room_id IS NULL", [$id]);
             throw $e;
         }
         Db::run('UPDATE challenges SET room_id = ? WHERE id = ?', [$room['id'], $id]);
+        if (($room['status'] ?? '') !== 'waiting') {
+            self::cancelPendingForRoom((int) $room['id']);
+        }
         return ['room' => $room];
     }
 
