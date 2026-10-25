@@ -14,7 +14,6 @@ import '../lobby/lobby_screen.dart';
 import '../ludo/ludo_controller.dart';
 import '../ludo/ludo_screen.dart';
 import '../misc/leaderboard_screen.dart';
-import 'cues_screen.dart';
 import 'duel_chrome.dart';
 import 'lobby_data.dart';
 import '../online/online_screens.dart';
@@ -151,12 +150,6 @@ class _BetLevelScreenState extends ConsumerState<BetLevelScreen> {
     showPoolPracticeDialog(context, open: _open, game: game);
   }
 
-  String _practiceSub(AppStrings t) => switch (widget.mode) {
-        DuelMode.ludo2 || DuelMode.ludo4 => t.practiceSubLudo,
-        DuelMode.carrom => t.practiceSubCarrom,
-        _ => t.practiceSub,
-      };
-
   @override
   Widget build(BuildContext context) {
     final t = ref.watch(stringsProvider);
@@ -238,46 +231,11 @@ class _BetLevelScreenState extends ConsumerState<BetLevelScreen> {
               ),
             ),
           ],
-          // Bottom row, as on the home screen but with BACK.
-          if (!widget.friendsRoom)
           Positioned(
             left: 42,
             top: 722,
-            child: GestureDetector(
-              onTap: () {
-                AudioService.tap();
-                _practice();
-              },
-              child: Container(
-                width: 430,
-                height: 132,
-                decoration: duelPanel(radius: 20, rim: const Color(0xFF2E8B57), fill: const Color(0xCC07140D)),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.smart_toy_rounded, color: Color(0xFF9BF2B5), size: 54),
-                    const SizedBox(width: 14),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(t.practice, style: AppText.label(24, color: const Color(0xFF9BF2B5), weight: FontWeight.w900)),
-                        const SizedBox(height: 4),
-                        Text(_practiceSub(t), style: AppText.label(12, color: DuelColors.dim)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 498,
-            top: 722,
             child: Row(
               children: [
-                NavTile(icon: NavTile.cuesIcon, label: t.navCues, onTap: () => _open(const CuesScreen())),
-                const SizedBox(width: 19),
                 NavTile(
                   icon: Icons.local_police_rounded,
                   label: t.navClub,
@@ -293,8 +251,6 @@ class _BetLevelScreenState extends ConsumerState<BetLevelScreen> {
                       body: t.friendsNavBody,
                       icon: Icons.groups_rounded),
                 ),
-                const SizedBox(width: 19),
-                NavTile(icon: Icons.backpack_rounded, label: t.navItems, onTap: () => _open(const CuesScreen(ownedOnly: true))),
                 const SizedBox(width: 19),
                 NavTile(icon: Icons.leaderboard_rounded, label: t.navRankings, onTap: () => _open(const LeaderboardScreen())),
                 const SizedBox(width: 19),

@@ -80,6 +80,7 @@ class AppStrings {
 
   // —— Settings ——
   String get settingsTitle => _t('PROFILE & SETTINGS', 'প্রোফাইল ও সেটিংস');
+  String get settingsPrefsBlock => _t('LANGUAGE & GAME', 'ভাষা ও গেম');
   String get sectionPlayer => _t('PLAYER', 'প্লেয়ার');
   String get nicknameLabel => _t('Nickname (3-16: letters, numbers, _)', 'ডাকনাম (৩–১৬: অক্ষর, সংখ্যা, _)');
   String get phoneShown => _t('Mobile number', 'মোবাইল নম্বর');
@@ -117,12 +118,22 @@ class AppStrings {
   String transferFeeHint(int pct, String fee, String total) =>
       _t('Fee $pct% ($fee) · Total deducted $total', 'ফি $pct% ($fee) · মোট কাটা $total');
   String get transferConfirmTap => _t('TAP AGAIN TO SEND', 'পাঠাতে আবার ট্যাপ করুন');
+  String get transferConfirmTitle => _t('SEND COINS?', 'কয়েন পাঠাবেন?');
+  String transferConfirmBody(String name, int amount, int fee, int total) => _t(
+        'Send ${formatCoinsDisplay(amount)} to $name?\nFee ${formatCoinsDisplay(fee)} — total ${formatCoinsDisplay(total)} from your wallet.',
+        '$name কে ${formatCoinsDisplay(amount)} পাঠাবেন?\nফি ${formatCoinsDisplay(fee)} — মোট ${formatCoinsDisplay(total)} কাটা হবে।',
+      );
+  String get itemsScreenSub => _t('BOARDS & CUES — BUY WITH PICO COIN', 'বোর্ড ও কিউ — পিকো কয়েনে কিনুন');
   String get transferSendBtn => _t('SEND COIN', 'কয়েন পাঠান');
   String get transferGuestOnly => _t('Only registered accounts can send coin.', 'শুধু রেজিস্টার্ড অ্যাকাউন্ট পাঠাতে পারবে।');
   String get transferInvalidId => _t('No player with this game ID.', 'এই গেম আইডিতে কেউ নেই।');
   String get transferNotEligible => _t('This ID cannot receive transfers (guest or invalid).', 'এই আইডি গ্রহণ করতে পারবে না।');
   String get transferSent => _t('TRANSFER SENT', 'পাঠানো হয়েছে');
   String transferSentBody(String name, int amount) => _t('You sent $amount to $name.', '$name কে $amount পাঠানো হয়েছে।');
+  String get badgeTransferSuccess => _t('SUCCESS', 'সফল');
+  String transferHistorySuccess(int amount, int fee) =>
+      _t('Transfer sent · fee $fee', 'পাঠানো হয়েছে · ফি $fee');
+  String transferHistoryReceived(int amount) => _t('Received $amount', '$amount পেয়েছেন');
   String get badgeTransfer => _t('TRANSFER', 'ট্রান্সফার');
   String get redeemCancel => _t('CANCEL', 'বাতিল');
   String get redeemPendingTitle => _t('PENDING REDEEMS', 'অপেক্ষমান রিডিম');
@@ -136,6 +147,9 @@ class AppStrings {
   String get openShop => _t('OPEN  >', 'খুলুন  >');
   String get poolTableBtn => _t('POOL TABLE', 'পুল টেবিল');
   String get carromTableBtn => _t('CARROM TABLE', 'ক্যারাম টেবিল');
+  String get carromGearShopTitle => _t('CARROM STRIKER & PIECES', 'ক্যারাম স্ট্রাইকার ও গুটি');
+  String get carromCoinLobbySub => _t('ONLINE FOR PICO COINS — CUSTOMIZE GEAR IN SHOP', 'পিকো কয়েনে অনলাইন — গিয়ার শপ থেকে');
+  String get shopItemsSection => _t('TABLES, CUES & GEAR', 'টেবিল, কিউ ও গিয়ার');
   String get ludoBoardBtn => _t('LUDO BOARD', 'লুডো বোর্ড');
   String get freeBoard => _t('FREE', 'ফ্রি');
   String get useBoard => _t('USE', 'ব্যবহার');
@@ -209,7 +223,13 @@ class AppStrings {
   String get updateReady => _t('READY TO INSTALL', 'ইনস্টলের জন্য তৈরি');
   String get updateInstall => _t('INSTALL', 'ইনস্টল');
   String get updateLater => _t('LATER', 'পরে');
+  String get updateRequiredHint =>
+      _t('You must install this update to play.', 'খেলতে হলে এই আপডেট ইনস্টল করতে হবে।');
   String get updateFailed => _t('Could not download the update.', 'আপডেট নামেনি।');
+  String get updateFailed404 => _t('APK file not found on the server (404). Upload the file to the link in admin.', 'সার্ভারে APK নেই (404)। অ্যাডমিনের লিংকে ফাইল আপলোড করুন।');
+  String updateFailedHttp(String code) => _t('Server replied: HTTP $code', 'সার্ভার: HTTP $code');
+  String get updateFailedHash => _t('APK hash mismatch. Clear SHA-256 in admin or upload the correct file.', 'APK hash মিলেনি। অ্যাডমিনে SHA-256 খালি করুন বা সঠিক ফাইল দিন।');
+  String get updateFailedNotApk => _t('Download was not an APK (wrong link or login page).', 'ডাউনলোড APK নয় (ভুল লিংক বা লগইন পেজ)।');
   String get updateRetry => _t('TRY AGAIN', 'আবার চেষ্টা');
   String get updateAllow => _t('Allow PikoPe to install apps, then tap Install.', 'PikoPe-কে অ্যাপ ইনস্টলের অনুমতি দিন, তারপর ইনস্টল চাপুন।');
   String get sectionLegal => _t('LEGAL', 'আইনি');
@@ -361,9 +381,16 @@ class AppStrings {
   String get sectionChallenges => _t('1V1 CHALLENGES', '১ বনাম ১ চ্যালেঞ্জ');
   String get challengesOffShort => _t('CHALLENGES OFF', 'চ্যালেঞ্জ বন্ধ');
   String get challengesSettingHint => _t(
-        'When ON, other online players can invite you to Pool, Ludo or Carrom while you are in the app.',
-        'চালু থাকলে অ্যাপে থাকা অবস্থায় অনলাইন খেলোয়াড়রা পুল, লুডু বা ক্যারামে চ্যালেঞ্জ পাঠাতে পারবে।',
+        'Choose which games can send you a 1v1 invite while you are online in the app.',
+        'অ্যাপে অনলাইন থাকলে কোন গেম থেকে ১ বনাম ১ চ্যালেঞ্জ নেবেন সেটি বেছে নিন।',
       );
+  String get challengeReceivePool => _t('Pool challenges', 'পুল চ্যালেঞ্জ');
+  String get challengeReceiveLudo => _t('Ludo challenges', 'লুডু চ্যালেঞ্জ');
+  String get challengeReceiveCarrom => _t('Carrom challenges', 'ক্যারাম চ্যালেঞ্জ');
+  String get challengePickGame => _t('Game mode', 'গেম মোড');
+  String get challengePickStake => _t('Pick a buy-in level', 'বাই-ইন লেভেল বেছে নিন');
+  String challengeTableLevel(int level) => _t('Table level $level', 'টেবিল লেভেল $level');
+  String challengeExpiresSec(int sec) => _t('${sec}s left', '$sec সেকেন্ড বাকি');
   String playerActivityLabel(String game, bool busy) {
     if (busy) return _t('IN MATCH', 'ম্যাচে');
     if (game.isEmpty) return _t('ONLINE', 'অনলাইন');
@@ -642,7 +669,9 @@ class AppStrings {
   // —— Cues ——
   String get myItems => _t('MY ITEMS', 'আমার আইটেম');
   String get cuesSubOwned => _t('YOUR CUES - TAP ONE TO USE IT', 'আপনার কিউ — ব্যবহারে ট্যাপ');
-  String get cuesSubBuy => _t('EVERY CUE PLAYS THE SAME - BUY WITH PICO COIN', 'সব কিউ একই — পিকো কয়েনে কিনুন');
+  String get cuesSubBuy => _t('SAME POWER ON ALL CUES - DIFFERENT LOOKS ONLY', 'সব কিউতে একই পাওয়ার — শুধু ডিজাইন আলাদা');
+  String get cuesSamePlayHint =>
+      _t('Every cue hits the same. Only the body design changes.', 'সব কিউ একই — শুধু বডির ডিজাইন আলাদা।');
   String get notEnoughCueBody => _t('Win matches and collect your daily bonus to afford this cue.', 'ম্যাচ জিতুন ও দৈনিক বোনাস নিন।');
   String get useCue => _t('USE', 'ব্যবহার');
   String get shopTitleShort => _t('SHOP', 'শপ');

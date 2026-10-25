@@ -13,8 +13,8 @@ import '../carrom/carrom_board.dart';
 import '../carrom/carrom_skins.dart';
 import '../game/widgets/table_art.dart';
 import '../ludo/ludo_board.dart';
-import 'cues_screen.dart';
 import 'duel_chrome.dart';
+import 'lobby_data.dart';
 import '../../l10n/strings.dart';
 
 enum BoardKind { pool, carrom, ludo }
@@ -35,7 +35,8 @@ class BoardShopScreen extends ConsumerWidget {
       BoardKind.carrom => t.carromTableBtn,
       BoardKind.ludo => t.ludoBoardBtn,
     };
-    final items = _items(kind);
+    final boardPrices = ref.watch(lobbyProvider).valueOrNull?.boardPrices;
+    final items = _items(kind, boardPrices);
     return DuelPage(
       title: title,
       expanded: true,
@@ -44,10 +45,6 @@ class BoardShopScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (kind == BoardKind.pool) ...[
-              const _SmallCueShop(),
-              const SizedBox(height: 18),
-            ],
             Wrap(
               spacing: 16,
               runSpacing: 16,
@@ -141,7 +138,12 @@ class _BoardItem {
   final Widget preview;
 }
 
-List<_BoardItem> _items(BoardKind kind) {
+int _boardPrice(Map<String, Map<String, int>>? catalog, String kind, String id, int fallback) {
+  return catalog?[kind]?[id] ?? fallback;
+}
+
+List<_BoardItem> _items(BoardKind kind, Map<String, Map<String, int>>? boardPrices) {
+  final kindKey = kind.name;
   switch (kind) {
     case BoardKind.pool:
       final skins = DemoData.tableSkins;
@@ -150,20 +152,20 @@ List<_BoardItem> _items(BoardKind kind) {
           _BoardItem(
             skins[i].id,
             skins[i].name,
-            i < 3 ? 0 : 2000 * (i - 2),
+            _boardPrice(boardPrices, kindKey, skins[i].id, i < 3 ? 0 : 2000 * (i - 2)),
             TableArt(skin: skins[i], width: 168),
           ),
       ];
       items.sort((a, b) => a.price.compareTo(b.price));
       return items;
     case BoardKind.carrom:
-      const prices = {'classic': 0, 'walnut': 0, 'royal': 4000, 'emerald': 6000, 'cherry': 8000, 'midnight': 12000};
+      const fallback = {'classic': 0, 'walnut': 0, 'royal': 4000, 'emerald': 6000, 'cherry': 8000, 'midnight': 12000};
       final items = [
         for (final b in boardSkins)
           _BoardItem(
             b.id,
             b.name,
-            prices[b.id] ?? 8000,
+            _boardPrice(boardPrices, kindKey, b.id, fallback[b.id] ?? 8000),
             CustomPaint(size: const Size(120, 120), painter: CarromBoardPainter(b)),
           ),
       ];
@@ -172,47 +174,15 @@ List<_BoardItem> _items(BoardKind kind) {
     case BoardKind.ludo:
       final items = [
         for (final theme in ludoBoardThemes)
-          _BoardItem(theme.id, theme.name, theme.price, _LudoSwatch(theme)),
+          _BoardItem(
+            theme.id,
+            theme.name,
+            _boardPrice(boardPrices, kindKey, theme.id, theme.price),
+            _LudoSwatch(theme),
+          ),
       ];
       items.sort((a, b) => a.price.compareTo(b.price));
       return items;
-  }
-}
-
-class _SmallCueShop extends ConsumerWidget {
-  const _SmallCueShop();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(stringsProvider);
-    return GestureDetector(
-      onTap: () {
-        AudioService.tap();
-        pushScreen(context, const CuesScreen());
-      },
-      child: Container(
-        width: 280,
-        height: 88,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: duelPanel(radius: 16, rim: DuelColors.blue),
-        child: Row(
-          children: [
-            const CrossedCuesIcon(size: 48, color: Color(0xFF9CC2FF)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(t.cueShop, style: AppText.label(18, color: Colors.white, weight: FontWeight.w900)),
-                  Text(t.openShop, style: AppText.label(13, color: const Color(0xFF9CC2FF), weight: FontWeight.w800)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
 

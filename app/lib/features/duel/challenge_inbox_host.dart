@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_state.dart';
 import '../../core/env.dart';
 import '../online/session.dart';
+import 'challenge_inbox_pulse.dart';
+import 'challenge_prefs.dart';
 import 'challenge_screen.dart';
 
 /// Pending incoming 1v1 invites (for nav badges).
@@ -25,24 +27,29 @@ class ChallengeInboxHost extends ConsumerStatefulWidget {
 class _ChallengeInboxHostState extends ConsumerState<ChallengeInboxHost> {
   Timer? _poll;
   bool _dialogOpen = false;
-  static final _handled = <int>{};
+  int? _showingId;
 
   @override
   void initState() {
     super.initState();
-    _poll = Timer.periodic(const Duration(seconds: 3), (_) => _tick());
+    _poll = Timer.periodic(const Duration(milliseconds: 900), (_) => _tick());
+    triggerChallengeInboxPoll = _tick;
     WidgetsBinding.instance.addPostFrameCallback((_) => _tick());
   }
 
   @override
   void dispose() {
+    if (triggerChallengeInboxPoll == _tick) {
+      triggerChallengeInboxPoll = null;
+    }
     _poll?.cancel();
     super.dispose();
   }
 
   Future<void> _tick() async {
     if (!mounted || !Env.hasBackend) return;
-    if (!ref.read(settingsProvider).challengesEnabled) {
+    final settings = ref.read(settingsProvider);
+    if (!anyChallengeReceiveEnabled(settings)) {
       ref.read(challengePendingCountProvider.notifier).state = 0;
       return;
     }
@@ -52,18 +59,20 @@ class _ChallengeInboxHostState extends ConsumerState<ChallengeInboxHost> {
       final inbox = await ref.read(sessionProvider.notifier).challengeInbox();
       if (!mounted) return;
       final incoming = (inbox['incoming'] as List).cast<Map<String, dynamic>>();
-      ref.read(challengePendingCountProvider.notifier).state = incoming.length;
-      if (_dialogOpen || incoming.isEmpty) return;
-      // Do not pop over an active online match.
+      final visible = incoming.where((c) => acceptsIncomingChallenge(settings, c['game'] as String)).toList();
+      ref.read(challengePendingCountProvider.notifier).state = visible.length;
+      if (_dialogOpen || visible.isEmpty) return;
+      // Do not cover an in-progress online match (matchmaking / lobby still get the banner).
       final active = ref.read(activeMatchProvider).valueOrNull;
       if (active != null) return;
-      final ch = incoming.first;
+      final ch = visible.first;
       final id = ch['id'] as int;
-      if (_handled.contains(id)) return;
-      _handled.add(id);
+      if (_showingId == id) return;
+      _showingId = id;
       _dialogOpen = true;
       await showIncomingChallenge(context, ref, ch);
       _dialogOpen = false;
+      _showingId = null;
     } on Object {
       // offline / not signed in
     }

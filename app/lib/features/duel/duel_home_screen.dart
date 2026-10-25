@@ -22,15 +22,16 @@ import '../carrom/carrom_lobby_screen.dart';
 import '../ludo/ludo_lobby_screen.dart';
 import '../misc/how_to_play_screen.dart';
 import 'bet_level_screen.dart';
+import 'practice_launch.dart';
 import 'challenge_inbox_host.dart';
 import 'challenge_screen.dart';
-import 'cues_screen.dart';
 import 'duel_chrome.dart';
 import 'history_screen.dart';
 import 'refer_screen.dart';
 import 'lobby_data.dart';
 import 'pool_hub_screen.dart';
 import '../../l10n/strings.dart';
+import 'items_screen.dart';
 import 'shop_screen.dart';
 
 /// Home lobby: pick Pool, Ludo or Carrom (every game gets the same billing),
@@ -170,6 +171,18 @@ class _DuelHomeScreenState extends ConsumerState<DuelHomeScreen> with WidgetsBin
         AppGame.tenBall => DuelMode.ten,
       };
 
+  void _practiceLudoPick() {
+    final t = ref.read(stringsProvider);
+    _chooser(
+      title: t.ludoTitle,
+      body: t.practiceSubLudo,
+      choices: [
+        (t.twoPlayers, _ludoColor, () => launchLudoPractice(context, ref, players: 2)),
+        (t.fourPlayers, _ludoColor, () => launchLudoPractice(context, ref, players: 4)),
+      ],
+    );
+  }
+
   void _practice() {
     final t = ref.read(stringsProvider);
     _chooser(
@@ -177,8 +190,8 @@ class _DuelHomeScreenState extends ConsumerState<DuelHomeScreen> with WidgetsBin
         body: t.practiceChooserBody,
         choices: [
           (t.poolTitle, _poolColor, () => showPoolPracticeDialog(context, open: _open)),
-          (t.ludoTitle, _ludoColor, () => _open(const LudoLobbyScreen())),
-          (t.carromTitle, _carromColor, () => _open(const CarromLobbyScreen())),
+          (t.ludoTitle, _ludoColor, _practiceLudoPick),
+          (t.carromTitle, _carromColor, () => launchCarromPractice(context, ref)),
         ],
       );
   }
@@ -383,7 +396,8 @@ class _DuelHomeScreenState extends ConsumerState<DuelHomeScreen> with WidgetsBin
             left: 42,
             top: 722,
             child: active != null
-                ? GestureDetector(
+                ? HighlightPulse(
+                    highlightColor: DuelColors.gold,
                     onTap: () {
                       AudioService.tap();
                       _rejoin(active);
@@ -395,7 +409,11 @@ class _DuelHomeScreenState extends ConsumerState<DuelHomeScreen> with WidgetsBin
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.play_circle_fill_rounded, color: DuelColors.gold, size: 58),
+                          PulseBadge(
+                            minScale: 0.94,
+                            maxScale: 1.12,
+                            child: const Icon(Icons.play_circle_fill_rounded, color: DuelColors.gold, size: 58),
+                          ),
                           const SizedBox(width: 14),
                           Column(
                             mainAxisSize: MainAxisSize.min,
@@ -456,7 +474,7 @@ class _DuelHomeScreenState extends ConsumerState<DuelHomeScreen> with WidgetsBin
                 const SizedBox(width: 19),
                 NavTile(icon: Icons.leaderboard_rounded, label: t.navRankings, onTap: () => _open(const LeaderboardScreen())),
                 const SizedBox(width: 19),
-                NavTile(icon: Icons.backpack_rounded, label: t.navItems, onTap: () => _open(const CuesScreen(ownedOnly: true))),
+                NavTile(icon: Icons.backpack_rounded, label: t.navItems, onTap: () => _open(const ItemsScreen())),
                 const SizedBox(width: 19),
                 NavTile(icon: Icons.groups_rounded, label: t.navFriends, onTap: _friends),
                 const SizedBox(width: 19),

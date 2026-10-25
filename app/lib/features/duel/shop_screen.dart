@@ -8,7 +8,6 @@ import '../../core/audio_service.dart';
 import '../../core/duel_ui.dart';
 import '../../data/api_client.dart';
 import '../online/session.dart';
-import 'board_shop.dart';
 import 'duel_chrome.dart';
 import 'lobby_data.dart';
 import '../../l10n/strings.dart';
@@ -63,6 +62,7 @@ class _ShopScreenState extends ConsumerState<ShopScreen> with SingleTickerProvid
       sub: t.shopSub(global),
       expanded: true,
       sideBack: true,
+      contentTop: 198,
       child: lobby.valueOrNull == null
           ? Center(
               child: lobby.hasError
@@ -76,10 +76,10 @@ class _ShopScreenState extends ConsumerState<ShopScreen> with SingleTickerProvid
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
                   indicatorColor: DuelColors.gold,
-                  indicatorWeight: 4,
-                  labelStyle: AppText.label(24, weight: FontWeight.w900),
-                  unselectedLabelStyle: AppText.label(22, color: DuelColors.dim, weight: FontWeight.w700),
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                  indicatorWeight: 3,
+                  labelStyle: AppText.label(20, weight: FontWeight.w900),
+                  unselectedLabelStyle: AppText.label(18, color: DuelColors.dim, weight: FontWeight.w700),
+                  labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   tabs: [
                     Tab(text: t.tabBuy),
                     Tab(text: t.tabAdd),
@@ -88,7 +88,8 @@ class _ShopScreenState extends ConsumerState<ShopScreen> with SingleTickerProvid
                     Tab(text: t.tabHistory),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const Divider(height: 1, thickness: 1, color: Color(0xFF2B3566)),
+                const SizedBox(height: 8),
                 Expanded(
                   child: TabBarView(
                     controller: _tabs,
@@ -117,6 +118,32 @@ class _ShopScreenState extends ConsumerState<ShopScreen> with SingleTickerProvid
   }
 }
 
+/// Shop tab content fills the tab area; panel stretches to at least full height.
+class _ShopPanel extends StatelessWidget {
+  const _ShopPanel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 26),
+              decoration: duelPanel(radius: 22),
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _BuyTab extends ConsumerWidget {
   const _BuyTab({required this.data, required this.onBuy});
 
@@ -127,75 +154,39 @@ class _BuyTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(stringsProvider);
     final packs = data.coinShop.packs;
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(t.packsTitle, style: AppText.label(26, color: DuelColors.gold, weight: FontWeight.w900)),
-          const SizedBox(height: 10),
-          if (packs.isEmpty)
-            Text(t.noPacks, style: AppText.label(18, color: DuelColors.dim))
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final pack in packs)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: _CoinPackCard(
-                        pack: pack,
-                        onTap: () => onBuy(pack),
-                      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(t.packsTitle, style: AppText.label(22, color: DuelColors.gold, weight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                if (packs.isEmpty)
+                  Text(t.noPacks, style: AppText.label(18, color: DuelColors.dim))
+                else
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: constraints.maxWidth >= 720 ? 3 : 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      mainAxisExtent: 196,
                     ),
-                ],
-              ),
+                    itemCount: packs.length,
+                    itemBuilder: (context, i) => _CoinPackCard(
+                      pack: packs[i],
+                      onTap: () => onBuy(packs[i]),
+                    ),
+                  ),
+              ],
             ),
-          const SizedBox(height: 22),
-          Row(
-            children: [
-              _ShopDoor(label: t.poolTableBtn, color: DuelColors.green, icon: Icons.crop_16_9_rounded, onTap: () => pushScreen(context, const BoardShopScreen(kind: BoardKind.pool))),
-              const SizedBox(width: 16),
-              _ShopDoor(label: t.carromTableBtn, color: const Color(0xFFD9A34A), icon: Icons.grid_on_rounded, onTap: () => pushScreen(context, const BoardShopScreen(kind: BoardKind.carrom))),
-              const SizedBox(width: 16),
-              _ShopDoor(label: t.ludoBoardBtn, color: const Color(0xFFE8721C), icon: Icons.casino_rounded, onTap: () => pushScreen(context, const BoardShopScreen(kind: BoardKind.ludo))),
-            ],
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ShopDoor extends StatelessWidget {
-  const _ShopDoor({required this.label, required this.color, required this.icon, required this.onTap});
-
-  final String label;
-  final Color color;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          AudioService.tap();
-          onTap();
-        },
-        child: Container(
-          height: 104,
-          decoration: duelPanel(radius: 16, rim: color, glow: true),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: 36),
-              const SizedBox(width: 12),
-              Text(label, style: AppText.label(24, color: Colors.white, weight: FontWeight.w900)),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -378,19 +369,14 @@ class _DepositTabState extends ConsumerState<_DepositTab> {
       return Center(child: Text(t.paymentUnavailable, style: AppText.label(22, color: DuelColors.dim, weight: FontWeight.w800)));
     }
     if (autoOk) {
-      return SingleChildScrollView(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(36, 28, 36, 32),
-          decoration: duelPanel(radius: 22),
-          child: ZiniPayAutoPanel(
-            config: cfg,
-            pack: widget.pack,
-            packs: widget.packs,
-            qty: widget.qty,
-            onPickPack: widget.onPickPack,
-            onQty: widget.onQty,
-          ),
+      return _ShopPanel(
+        child: ZiniPayAutoPanel(
+          config: cfg,
+          pack: widget.pack,
+          packs: widget.packs,
+          qty: widget.qty,
+          onPickPack: widget.onPickPack,
+          onQty: widget.onQty,
         ),
       );
     }
@@ -399,19 +385,15 @@ class _DepositTabState extends ConsumerState<_DepositTab> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
       labelStyle: AppText.label(20, color: DuelColors.dim),
     );
-    return SingleChildScrollView(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(36, 28, 36, 32),
-        decoration: duelPanel(radius: 22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(t.addCoinTitle, style: AppText.label(36, color: DuelColors.gold, weight: FontWeight.w900)),
-            const SizedBox(height: 10),
-            Text(t.addCoinSteps, style: AppText.label(20, color: DuelColors.dim)),
-            const SizedBox(height: 22),
-            for (final a in cfg.agents)
+    return _ShopPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(t.addCoinTitle, style: AppText.label(36, color: DuelColors.gold, weight: FontWeight.w900)),
+          const SizedBox(height: 10),
+          Text(t.addCoinSteps, style: AppText.label(20, color: DuelColors.dim)),
+          const SizedBox(height: 22),
+          for (final a in cfg.agents)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
@@ -528,7 +510,6 @@ class _DepositTabState extends ConsumerState<_DepositTab> {
               onPressed: _busy ? null : _submit,
             ),
           ],
-        ),
       ),
     );
   }
@@ -743,15 +724,11 @@ class _RedeemTabState extends ConsumerState<_RedeemTab> {
     final input = AppText.label(28, color: Colors.white);
     const fieldPad = EdgeInsets.symmetric(horizontal: 22, vertical: 22);
     final fieldLabel = AppText.label(20, color: DuelColors.dim);
-    return SingleChildScrollView(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(36, 28, 36, 32),
-        decoration: duelPanel(radius: 22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FutureBuilder<List<Map<String, dynamic>>>(
+    return _ShopPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FutureBuilder<List<Map<String, dynamic>>>(
               future: _pending,
               builder: (context, snap) {
                 final rows = snap.data ?? const [];
@@ -857,7 +834,6 @@ class _RedeemTabState extends ConsumerState<_RedeemTab> {
               onPressed: _busy ? null : _submit,
             ),
           ],
-        ),
       ),
     );
   }
@@ -884,25 +860,40 @@ class _ActivityTabState extends ConsumerState<_ActivityTab> {
   @override
   Widget build(BuildContext context) {
     final t = ref.watch(stringsProvider);
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _feed,
-      builder: (context, snap) {
-        if (snap.hasError) {
-          return Center(child: Text(t.historyLoadFail, style: AppText.label(18, color: DuelColors.red)));
-        }
-        final rows = snap.data;
-        if (rows == null) return const Center(child: CircularProgressIndicator(color: DuelColors.silver));
-        if (rows.isEmpty) {
-          return Center(child: Text(t.historyEmpty, style: AppText.label(20, color: DuelColors.dim)));
-        }
-        return RefreshIndicator(
-          color: DuelColors.gold,
-          onRefresh: () async => _reload(),
-          child: ListView.separated(
-            itemCount: rows.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFF1E2546)),
-            itemBuilder: (context, i) => _ActivityRow(item: rows[i]),
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        Widget body;
+        final snap = _feed;
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: snap,
+          builder: (context, snap) {
+            if (snap.hasError) {
+              body = Center(child: Text(t.historyLoadFail, style: AppText.label(20, color: DuelColors.red)));
+            } else if (!snap.hasData) {
+              body = const Center(child: CircularProgressIndicator(color: DuelColors.silver));
+            } else if (snap.data!.isEmpty) {
+              body = Center(child: Text(t.historyEmpty, style: AppText.label(22, color: DuelColors.dim)));
+            } else {
+              final rows = snap.data!;
+              body = RefreshIndicator(
+                color: DuelColors.gold,
+                onRefresh: () async => _reload(),
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  itemCount: rows.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1, color: Color(0xFF1E2546)),
+                  itemBuilder: (context, i) => _ActivityRow(item: rows[i]),
+                ),
+              );
+            }
+            return Container(
+              width: double.infinity,
+              height: constraints.maxHeight,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              decoration: duelPanel(radius: 22),
+              child: body,
+            );
+          },
         );
       },
     );
@@ -954,10 +945,12 @@ class _ActivityRow extends ConsumerWidget {
       final peer = sent ? (item['toName'] as String? ?? '') : (item['fromName'] as String? ?? '');
       final peerId = sent ? item['toGameId'] : item['fromGameId'];
       return _rowShell(
-        badge: t.badgeTransfer,
-        badgeColor: sent ? DuelColors.silver : DuelColors.green,
+        badge: sent ? t.badgeTransferSuccess : t.badgeTransfer,
+        badgeColor: sent ? DuelColors.green : DuelColors.green,
         title: sent ? '→ $peer' : '← $peer',
-        sub: 'ID $peerId · ${sent ? '-${formatCoins(amount + fee)}' : '+${formatCoins(amount)}'}',
+        sub: sent
+            ? '${t.transferHistorySuccess(amount, fee)} · ID $peerId'
+            : '${t.transferHistoryReceived(amount)} · ID $peerId',
         coins: sent ? -(amount + fee) : amount,
         time: time,
       );
@@ -1057,47 +1050,82 @@ class _CoinPackCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(stringsProvider);
+    final bonus = pack.discountPercent;
+    final payLabel = pack.free
+        ? t.claimNow
+        : pack.priceCoins > 0
+            ? formatCoins(pack.priceCoins, compact: true)
+            : t.payNow;
     return GestureDetector(
       onTap: () {
         AudioService.tap();
         onTap();
       },
       child: Container(
-          width: 252,
-          height: 248,
-          decoration: duelPanel(radius: 18, rim: Color.lerp(DuelColors.gold, Colors.black, 0.35)!),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const PikoCoinIcon(size: 88),
-              const SizedBox(height: 8),
-              Text(formatCoins(pack.coins, compact: true),
-                  style: AppText.label(38, color: Colors.white, weight: FontWeight.w900)),
-              Text(t.youGetCoins(formatPicoCoins(pack.receiveCoins)),
-                  style: AppText.label(18, color: DuelColors.gold, weight: FontWeight.w800)),
-              if (pack.name != '${pack.coins}')
-                Text(pack.name, style: AppText.label(15, color: DuelColors.dim, weight: FontWeight.w700)),
-              if (pack.discountPercent > 0)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    t.bonusPercent(pack.discountPercent),
-                    style: AppText.label(16, color: DuelColors.green, weight: FontWeight.w800),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C2238),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF2E3654)),
+          boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 8, offset: Offset(0, 4))],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 14, 10, 10),
+              child: Column(
+                children: [
+                  const PikoCoinIcon(size: 48),
+                  const SizedBox(height: 6),
+                  Text(
+                    formatCoins(pack.coins, compact: true),
+                    textAlign: TextAlign.center,
+                    style: AppText.label(20, color: Colors.white, weight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    t.youGetCoins(formatPicoCoins(pack.receiveCoins)),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.label(11, color: DuelColors.gold, weight: FontWeight.w800),
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: double.infinity,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF12915D),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [BoxShadow(color: Color(0x4012915D), blurRadius: 6, offset: Offset(0, 2))],
+                    ),
+                    child: Text(payLabel, style: AppText.label(12, color: Colors.white, weight: FontWeight.w900)),
+                  ),
+                ],
+              ),
+            ),
+            if (bonus > 0)
+              Positioned(
+                top: 8,
+                left: -28,
+                child: Transform.rotate(
+                  angle: -0.65,
+                  child: Container(
+                    width: 96,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    color: const Color(0xFFD32F2F),
+                    child: Text(
+                      '+$bonus%',
+                      style: AppText.label(11, color: Colors.white, weight: FontWeight.w900),
+                    ),
                   ),
                 ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: DuelColors.gold.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: DuelColors.gold),
-                ),
-                child: Text(t.payNow, style: AppText.label(16, color: DuelColors.gold, weight: FontWeight.w900)),
               ),
-            ],
-          ),
+          ],
         ),
+      ),
     );
   }
 }

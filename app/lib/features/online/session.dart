@@ -115,6 +115,9 @@ class SessionNotifier extends Notifier<SessionState> {
           ownedCarromBoards: _idList(user['ownedCarromBoards']) ?? s.ownedCarromBoards,
           ownedLudoBoards: _idList(user['ownedLudoBoards']) ?? s.ownedLudoBoards,
           challengesEnabled: user['challengesEnabled'] as bool? ?? s.challengesEnabled,
+          challengePoolEnabled: user['challengePoolEnabled'] as bool? ?? s.challengePoolEnabled,
+          challengeLudoEnabled: user['challengeLudoEnabled'] as bool? ?? s.challengeLudoEnabled,
+          challengeCarromEnabled: user['challengeCarromEnabled'] as bool? ?? s.challengeCarromEnabled,
           coins: _asInt(user['coins'], s.coins),
           wins: _asInt(user['wins'], s.wins),
           games: _asInt(user['games'], s.games),
@@ -225,8 +228,16 @@ class SessionNotifier extends Notifier<SessionState> {
     await ensureSignedIn();
     final code = gameId.replaceAll(RegExp(r'\D'), '');
     final r = await _api.post('/transfer/send', {'gameId': code, 'amount': amount});
-    _adopt(r['user'] as Map<String, dynamic>);
-    return r['transfer'] as Map<String, dynamic>;
+    final user = r['user'];
+    if (user is Map<String, dynamic>) {
+      _adopt(user);
+    } else if (user is Map) {
+      _adopt(Map<String, dynamic>.from(user));
+    }
+    final transfer = r['transfer'];
+    if (transfer is Map<String, dynamic>) return transfer;
+    if (transfer is Map) return Map<String, dynamic>.from(transfer);
+    return const {};
   }
 
   /// Operator announcements to show in the inbox (and home banner).
